@@ -301,12 +301,12 @@ spec:
 
 
 
-$ kubectl -n kafka apply -f ./kafka/strimzi/11.kafka-user.yaml
+$ kubectl -n kafka apply -f ./kafka/strimzi/user/11.kafka-user.yaml
 
 
 $ kubectl -n kafka get kafkauser
 NAME      CLUSTER      AUTHENTICATION   AUTHORIZATION   READY
-my-user   my-cluster   scram-sha-512    simple
+my-user   my-cluster   scram-sha-512    simple          True
 
 ```
 
@@ -327,10 +327,14 @@ my-user   my-cluster   scram-sha-512    simple
 ```sh
 
 $ kubectl -n kafka get secret my-user
+NAME      TYPE     DATA   AGE
+my-user   Opaque   2      28s
 
+$ kubectl -n kafka get secret my-user -o jsonpath='{.data.password}' | base64 -d
+pprOnk80CDfo
 
 # user/pass 
-  my-user / RUqfDsDzvZdL
+  my-user / pprOnk80CDfo
   
 ```
 
@@ -341,13 +345,9 @@ $ kubectl -n kafka get secret my-user
 ### (3) clean up
 
 ```sh
-
 $ kubectl -n kafka delete kafkauser my-user
 
-
 ```
-
-
 
 
 
@@ -472,6 +472,10 @@ spec:
 
 ## 5.1. Topic 정책 
 
+일반적인 topic 정책
+
+
+
 - topic 정책
 
 ```
@@ -483,6 +487,7 @@ spec:
 - sample topic 
 
 ```
+
 order-intl-board-create
 order-intl-board-update
 order-intl-board-delete
@@ -508,9 +513,9 @@ rater-intl-board-delete
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
-  name: order-my-topic1
+  name: my-topic
   labels:
-    strimzi.io/cluster: sa-cluster
+    strimzi.io/cluster: my-cluster
   namespace: kafka
 spec:
   partitions: 3
@@ -524,6 +529,8 @@ spec:
 
 - partitions 1이면 producer 수행시 아래 메세지 발생할 수 있음.
   -  LEADER_NOT_AVAILABLE
+
+
 
 
 
