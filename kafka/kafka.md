@@ -238,8 +238,9 @@ order로 시작하는 모든 group을 Consume 가능
 ## 4.2 user 생성
 
 ```sh
-cd /home/mobaxterm/song/kafka/strimzi/kafkaUser 
-cat > 11.KafkaUser-my-bridge-user-my-topic.yaml
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/11.kafka-user.yaml
 ---
 apiVersion: kafka.strimzi.io/v1beta1
 kind: KafkaUser
@@ -270,6 +271,18 @@ spec:
           patternType: prefix
           type: group
 ---
+
+
+
+$ kubectl -n kafka apply -f ./kafka/strimzi/11.kafka-user.yaml
+
+
+$ kubectl -n kafka get kafkauser
+NAME      CLUSTER      AUTHENTICATION   AUTHORIZATION   READY
+my-user   my-cluster   scram-sha-512    simple
+
+
+
 ```
 
 - 1) order로 시작하는 topic 을 모두 처리가능
