@@ -63,13 +63,16 @@ kubectl create -f install/cluster-operator/031-RoleBinding-strimzi-cluster-opera
 
 
 
-## 3.1 ephemeral sample
+## 1) ephemeral sample
 
-### 1) kafka cluster 생성(no 인증)
+### (1) kafka cluster 생성(no 인증)
 
 - 기본생성
 
-```yaml
+```sh
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/kafka/12.kafka-ephemeral-auth.yaml
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
@@ -103,7 +106,13 @@ spec:
       type: ephemeral
   entityOperator:
     topicOperator: {}
-    userOperator: {} 
+    userOperator: {}
+
+
+
+$ cat ./strimzi/kafka/12.kafka-ephemeral-auth.yaml
+
+
 ```
 
 
@@ -112,9 +121,14 @@ spec:
 
 
 
-### 2) kafka cluster 생성(인증)
+### (2) kafka cluster 생성(인증)
 
-```yaml
+#### 생성
+
+```sh
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/kafka/12.kafka-ephemeral-auth.yaml
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
@@ -152,7 +166,13 @@ spec:
       type: ephemeral
   entityOperator:
     topicOperator: {}
-    userOperator: {} 
+    userOperator: {}
+
+$ kubectl -n kafka apply -f ./kafka/strimzi/kafka/12.kafka-ephemeral-auth.yaml
+
+
+
+
 ```
 
 - 인증메커니즘
@@ -160,34 +180,39 @@ spec:
   - SASL 은 인증 멫 보안 서비스를 제공하는 프레임워크이다.
   - 위 yaml 파일의 인증방식은 scram-sha-512  방식인데 이는 SASL 이 지원하는 메커니즘 중 하나이며 Broker 를 SASL 구성로 구성한다.
 
-- Client 에서 접속하는 두가지 방법
 
-  - sasl.jaas.config 설정
 
-  - JAAS Configuration
+#### 확인
 
-    - 애플리케이션 구동시 아규먼트 이용
+```sh
 
-    ```
-    -Djava.security.auth.login.config={JAAS File} 
-    ```
+$ kkf get pod
+NAME                                        READY   STATUS    RESTARTS       AGE
+kafkacat                                    1/1     Running   1 (7h7m ago)   7d18h
+my-cluster-kafka-0                          1/1     Running   0              35s
+my-cluster-kafka-1                          1/1     Running   0              35s
+my-cluster-kafka-2                          1/1     Running   0              35s
+my-cluster-zookeeper-0                      1/1     Running   0              59s
+my-cluster-zookeeper-1                      1/1     Running   0              59s
+my-cluster-zookeeper-2                      1/1     Running   0              59s
+strimzi-cluster-operator-7c77f74847-llxn5   1/1     Running   1 (7h7m ago)   8d
 
-  - Kafka client 0.10.2.X 이상 버전 일때는 JAAS Config 방식을 사용하지 않고 클라이언트의 특성에서 직접 SASL 인증을 구성
+$ kubectl -n kafka get kafka
+NAME         DESIRED KAFKA REPLICAS   DESIRED ZK REPLICAS   READY   WARNINGS
+my-cluster   3                        3                     True
 
-- security.protocol 설정
 
-  - tls 방식은 아니므로 _SASL_PLAINTEXT_로 설정한다.
-
-- cluster 생성
 
 ```
-$ oc -n kafka create -f 11.kafka-sa-cluster.yaml
+
+
+
+#### clean up
+
+```sh
+$ kubectl -n kafka delete kafka my-cluster
+
 ```
-
-- deleteClaim
-  - kafka cluster 가 undeployed 되었을때 데이터를 삭제할지를 묻는다.
-
-
 
 
 
@@ -203,7 +228,7 @@ $ oc -n kafka create -f 11.kafka-sa-cluster.yaml
 
 
 
-## 4.1. User 정책
+## 1) User 정책
 
 
 
@@ -235,12 +260,14 @@ order로 시작하는 모든 group을 Consume 가능
 
 
 
-## 4.2 user 생성
+## 2) User 생성
+
+### (1) kafkauser생성
 
 ```sh
 $ cd ~/githubrepo/ktds-edu2
 
-$ cat ./kafka/strimzi/11.kafka-user.yaml
+$ cat ./kafka/strimzi/user/11.kafka-user.yaml
 ---
 apiVersion: kafka.strimzi.io/v1beta1
 kind: KafkaUser
@@ -281,27 +308,23 @@ $ kubectl -n kafka get kafkauser
 NAME      CLUSTER      AUTHENTICATION   AUTHORIZATION   READY
 my-user   my-cluster   scram-sha-512    simple
 
-
-
 ```
 
-- 1) order로 시작하는 topic 을 모두 처리가능
+- 1) my로 시작하는 topic 을 모두 처리가능
 
-  - ex) order-intl-board-create,  order-intl-board-update
+  - ex) my-board-create,  my-board-update
 
 - 2) consumer group 은 항상 동일하다. 
 
-  - ex) order-intl-board-group
+  - ex) my-board-group
 
 - 3) default consumer-group 을 위해서 생성한다.
 
+  
 
+### (2) password 확인
 
 ```sh
-$ oc -n kafka create -f 11.KafkaUser-order-user-my-topic.yaml
-$ oc -n kafka get secret order-user
-NAME             TYPE      DATA      AGE
-order-user   Opaque    1         26d
 
 $ kubectl -n kafka get secret my-user
 
@@ -315,7 +338,22 @@ $ kubectl -n kafka get secret my-user
 
 
 
-## 4.3 참고 yaml 
+### (3) clean up
+
+```sh
+
+$ kubectl -n kafka delete kafkauser my-user
+
+
+```
+
+
+
+
+
+
+
+## 3) 참고 yaml 
 
 ### 1) 참고 - my-bridge-user
 
