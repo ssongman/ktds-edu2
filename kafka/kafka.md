@@ -1815,11 +1815,597 @@ kafkacat -b $BROKERS \
 
 
 
+# 8. Monitoring
+
+모니터링이 필요할 경우 exporter 를 설치후 promtheus와 연동할 수 있다. 
+
+
+
+![img](kafka.assets/1ztl7ii-FrK0GOL8mxwVFFQ.png)
 
 
 
 
-# 8. python 실습
+
+## 1) metric
+
+모니터링이 필요할 경우 아래와 같이 exporter 를 설치후 promtheus와 연동할 수 있다. 
+
+
+
+- exporter 기능은 Strimzi에서 제공되는 통합 이미지 내에 포함되어 있음.   
+
+  - strimzi/kafka:0.29.0-kafka-3.2.0    <-- strimzi-cluster-operator 에서 기본 이미지 설정가능
+- kafka cluster 에서 위 yaml 파일만 수정후 apply 해도 추가가능.(kafka cluster 를 재설치 하지 않아도 됨.)
+- prometheus / grafana 는 일반적인 내용과 동일함.
+- grafana 에서는 strimzi dashboard 를 찾아서 import 한다.
+- arsenal-cluster-kafka-exporter:9404 로 접근가능
+
+
+
+### (1) my-cluter 에 exporter 생성
+
+```sh
+$ kubectl -n kafka edit kafka my-cluster
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: sa-cluster
+  namespace: kafka-system
+  ...
+spec:
+  entityOperator:
+  kafka:
+  zookeeper:
+  
+  ## exporter 추가
+  kafkaExporter:
+    groupRegex: .*
+    topicRegex: .*
+  ...    
+---
+
+
+```
+
+
+
+- exporter pod 생성 여부 확인
+
+```sh
+# 확인
+$ kubectl -n kafka get pod
+NAME                                          READY   STATUS              RESTARTS      AGE
+...
+my-cluster-kafka-exporter-79b8c986f8-wg259    0/1     ContainerCreating   0             0s
+...
+
+
+## my-cluster-kafka-exporter 가 추가된다.
+
+
+```
+
+
+
+
+
+### (2) exporter service 생성
+
+exporter service 는 자동으로 생성되지 않는다.
+
+아래와 같이 수동으로 추가해야 한다.
+
+```sh
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/monitoring/11.my-cluster-kafka-exporter-service.yaml
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-cluster-kafka-exporter
+  namespace: kafka
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 9404
+  selector:    
+    app.kubernetes.io/instance: my-cluster
+    app.kubernetes.io/managed-by: strimzi-cluster-operator
+    app.kubernetes.io/name: kafka-exporter    
+  type: ClusterIP
+
+
+
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/11.my-cluster-kafka-exporter-service.yaml
+
+
+```
+
+
+
+- 확인
+
+```
+kkf get svc
+NAME                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE
+...
+my-cluster-kafka-exporter             ClusterIP   10.43.246.16    <none>        80/TCP                                4s
+...
+```
+
+
+
+
+
+- exporter pod 에서 metric 정상 수집 여부 확인
+
+```sh
+$ kkf exec -it my-cluster-kafka-exporter-79b8c986f8-wg259 -- bash
+
+
+$ curl localhost:9404/metrics
+# HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 0.00037912
+go_gc_duration_seconds{quantile="0.25"} 0.00037912
+go_gc_duration_seconds{quantile="0.5"} 0.00037912
+go_gc_duration_seconds{quantile="0.75"} 0.00037912
+go_gc_duration_seconds{quantile="1"} 0.00037912
+go_gc_duration_seconds_sum 0.00037912
+go_gc_duration_seconds_count 1
+# HELP go_goroutines Number of goroutines that currently exist.
+# TYPE go_goroutines gauge
+go_goroutines 19
+# HELP go_info Information about the Go environment.
+# TYPE go_info gauge
+go_info{version="go1.17.1"} 1
+
+
+$ curl my-cluster-kafka-exporter.kafka.svc/metrics
+<-- ok
+```
+
+
+
+
+
+## 2) prometheus 
+
+
+
+### (1) 권한부여
+
+- openshift 에서 수행시 anyuid 권한이 필요하다.
+
+```
+# 권한부여시
+oc adm policy add-scc-to-user    anyuid -z prometheus-server -n kafka
+
+# 권한삭제시
+oc adm policy remove-scc-from-user anyuid  -z prometheus-server -n kafka
+
+```
+
+
+
+### (2) helm deploy
+
+```sh
+$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+$ helm fetch prometheus-community/prometheus
+
+$ tar -zxvf prometheus-15.10.1.tgz
+
+
+
+$ helm -n kafka list
+
+$ helm -n kafka install prometheus prometheus-community/prometheus \
+  --set alertmanager.enabled=false \
+  --set configmapReload.prometheus.enabled=false \
+  --set configmapReload.alertmanager.enabled=false \
+  --set kubeStateMetrics.enabled=false \
+  --set nodeExporter.enabled=false \
+  --set server.enabled=true \
+  --set server.image.repository=quay.io/prometheus/prometheus \
+  --set server.namespaces[0]=kafka \
+  --set server.ingress.enabled=false \
+  --set server.persistentVolume.enabled=false \
+  --set pushgateway.enabled=false \
+  --dry-run=true > dry-run.yaml
+
+
+## 확인
+$ helm3 -n kafka ls
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
+prometheus      kafka           1               2022-06-26 00:45:11.7836364 +0900 KST   deployed        prometheus-15.10.1      2.34.0
+   
+
+## 삭제
+$ helm3 -n kafka delete prometheus 
+```
+
+
+
+
+
+### (3) prometheus svc 확인 
+
+```sh
+$ kkf get svc
+NAME                                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                               AGE
+...
+prometheus-server                     ClusterIP   172.30.246.251   <none>        80/TCP                                68s
+
+```
+
+
+
+
+
+### (4) ingress
+
+````sh
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/monitoring/21.prometheus-ingress.yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus-ingress
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+spec:
+  rules:
+  - host: "prometheus.kafka.ktcloud.211.254.212.105.nip.io"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus-server
+            port:
+              number: 80
+
+
+
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/21.prometheus-ingress.yaml
+````
+
+- 확인
+
+![image-20220626124323035](kafka.assets/image-20220626124323035.png)
+
+
+
+### (5) route
+
+openshift 환경일때는 route 를 생성한다.
+
+````sh
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/monitoring/22.prometheus-route.yaml
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: prometheus-route
+  namespace: kafka-system
+  labels:
+    app: prometheus
+    app.kubernetes.io/managed-by: Helm
+    chart: prometheus-15.8.4
+    component: server
+    heritage: Helm
+    release: prometheus
+spec:
+  host: prometheus-kafka.apps.211-34-231-82.nip.io
+  to:
+    kind: Service
+    name: prometheus-server
+    weight: 100
+  port:
+    targetPort: http
+    
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/22.prometheus-route.yaml
+````
+
+
+
+
+
+
+
+### (6) configmap
+
+exporter 주소를 추가해야 한다.
+
+````sh
+$ kubectl -n kafka edit configmap prometheus-server
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: prometheus-server
+  namespace: kafka
+  ...
+data:
+  ...
+  prometheus.yml: |
+    global:
+      evaluation_interval: 1m
+      scrape_interval: 1m
+      scrape_timeout: 10s
+    rule_files:
+    - /etc/config/recording_rules.yml
+    - /etc/config/alerting_rules.yml
+    - /etc/config/rules
+    - /etc/config/alerts
+    scrape_configs: 
+    
+    ## 아래 부분 추가
+    - job_name: kafka-exporter
+      metrics_path: /metrics
+      scrape_interval: 10s
+      scrape_timeout: 10s
+      static_configs:
+      - targets:
+        - my-cluster-kafka-exporter.kafka.svc
+     ...
+````
+
+- 추가후 prometheus server 재기동
+
+```sh
+$ kkf get pod
+NAME                                          READY   STATUS    RESTARTS      AGE
+...
+prometheus-server-5dc67b6855-cdm54            1/1     Running   0             24m
+...
+
+
+$kkf delete pod prometheus-server-5dc67b6855-cdm54
+pod "prometheus-server-5dc67b6855-cdm54" deleted
+
+
+$kkf get pod
+NAME                                          READY   STATUS    RESTARTS      AGE
+my-cluster-kafka-exporter-79b8c986f8-wg259    1/1     Running   1 (60m ago)   60m
+prometheus-server-5dc67b6855-67xts            0/1     Running   0             9s
+
+```
+
+
+
+- status / target 에서 아래와 같이 kafka-exporter 가 추가된것을 확인한다.
+
+![image-20220626124700665](kafka.assets/image-20220626124700665.png)
+
+
+
+
+
+## 3) Grafana deploy
+
+- deploy
+
+```sh
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/monitoring/31.grafana-deployment.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: kafka
+  labels:
+    app: strimzi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: grafana
+  template:
+    metadata:
+      labels:
+        name: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: docker.io/grafana/grafana:7.3.7
+        ports:
+        - name: grafana
+          containerPort: 3000
+          protocol: TCP
+        volumeMounts:
+        - name: grafana-data
+          mountPath: /var/lib/grafana
+        - name: grafana-logs
+          mountPath: /var/log/grafana
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      volumes:
+      - name: grafana-data
+        emptyDir: {}
+      - name: grafana-logs
+        emptyDir: {}
+        
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/31.grafana-deployment.yaml
+deployment.apps/grafana created
+
+```
+
+
+
+
+- service
+
+```sh
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/monitoring/32.grafana-svc.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: kafka
+  labels:
+    app: strimzi
+spec:
+  ports:
+  - name: grafana
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    name: grafana
+  type: ClusterIP
+
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/32.grafana-svc.yaml
+service/grafana created
+
+
+
+```
+
+
+
+
+
+- ingress
+
+```sh
+$ cat ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+spec:
+  rules:
+  - host: "grafana.kafka.ktcloud.211.254.212.105.nip.io"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000
+
+
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
+ingress.networking.k8s.io/grafana-ingress created
+
+```
+
+
+
+- route
+  - openshift 환경에서만 사용
+
+```yaml
+$ cat ./kafka/strimzi/monitoring/34.grafana-route.yaml
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: grafana-kafka-route
+  namespace: kafka
+  labels:
+    app: strimzi
+spec:
+  host: grafana-kafka.apps.211-34-231-82.nip.io
+  to:
+    kind: Service
+    name: grafana
+    weight: 100
+  port:
+    targetPort: grafana
+  wildcardPolicy: None
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/34.grafana-route.yaml
+```
+
+
+
+- 로그인
+
+기본 Grafana 사용자 이름과 암호는 모두 admin 이다.
+
+
+
+ 
+
+## 4) Grafana Monitoring
+
+### (1) Grafana 접속
+
+http://grafana-kafka.apps.211-34-231-82.nip.io
+
+
+
+
+
+
+
+### (2) promehteus 연동
+
+- 메뉴 : Data Sources / Promehteus 
+- URL : prometheus-server  입력
+
+
+
+### (3) strimzi exporter dashboard import
+
+- 메뉴: Dashboards / Manage
+- import : 11285입력
+- 참고링크 
+
+https://grafana.com/grafana/dashboards/11285-strimzi-kafka-exporter
+
+
+
+### (4) 확인
+
+- 메뉴 위치 : Dashboards > Manage > Strimzi Kafka Exporter
+
+![image-20220626111254872](kafka.assets/image-20220626111254872.png)
+
+
+
+
+
+
+
+
+
+
+
+# 9. python 실습
 
 아래 설명은 nodeport 기준이다.
 
@@ -2493,599 +3079,6 @@ python kafkaAdminClient.py
 	}
 ```
 
-
-
-
-
-
-
-# 10. monitoring
-
-모니터링이 필요할 경우 exporter 를 설치후 promtheus와 연동할 수 있다. 
-
-
-
-![img](kafka.assets/1ztl7ii-FrK0GOL8mxwVFFQ.png)
-
-
-
-
-
-## 1) metric
-
-모니터링이 필요할 경우 아래와 같이 exporter 를 설치후 promtheus와 연동할 수 있다. 
-
-
-
-- exporter 기능은 Strimzi에서 제공되는 통합 이미지 내에 포함되어 있음.   
-
-  - strimzi/kafka:0.29.0-kafka-3.2.0    <-- strimzi-cluster-operator 에서 기본 이미지 설정가능
-- kafka cluster 에서 위 yaml 파일만 수정후 apply 해도 추가가능.(kafka cluster 를 재설치 하지 않아도 됨.)
-- prometheus / grafana 는 일반적인 내용과 동일함.
-- grafana 에서는 strimzi dashboard 를 찾아서 import 한다.
-- arsenal-cluster-kafka-exporter:9404 로 접근가능
-
-
-
-### (1) my-cluter 에 exporter 생성
-
-```sh
-$ kubectl -n kafka edit kafka my-cluster
----
-apiVersion: kafka.strimzi.io/v1beta2
-kind: Kafka
-metadata:
-  name: sa-cluster
-  namespace: kafka-system
-  ...
-spec:
-  entityOperator:
-  kafka:
-  zookeeper:
-  
-  ## exporter 추가
-  kafkaExporter:
-    groupRegex: .*
-    topicRegex: .*
-  ...    
----
-
-
-```
-
-
-
-- exporter pod 생성 여부 확인
-
-```sh
-# 확인
-$ kubectl -n kafka get pod
-NAME                                          READY   STATUS              RESTARTS      AGE
-...
-my-cluster-kafka-exporter-79b8c986f8-wg259    0/1     ContainerCreating   0             0s
-...
-
-
-## my-cluster-kafka-exporter 가 추가된다.
-
-
-```
-
-
-
-
-
-### (2) exporter service 생성
-
-exporter service 는 자동으로 생성되지 않는다.
-
-아래와 같이 수동으로 추가해야 한다.
-
-```sh
-
-$ cd ~/githubrepo/ktds-edu2
-
-$ cat ./kafka/strimzi/monitoring/11.my-cluster-kafka-exporter-service.yaml
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: my-cluster-kafka-exporter
-  namespace: kafka
-spec:
-  ports:
-    - name: http
-      protocol: TCP
-      port: 80
-      targetPort: 9404
-  selector:    
-    app.kubernetes.io/instance: my-cluster
-    app.kubernetes.io/managed-by: strimzi-cluster-operator
-    app.kubernetes.io/name: kafka-exporter    
-  type: ClusterIP
-
-
-
-$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/11.my-cluster-kafka-exporter-service.yaml
-
-
-```
-
-
-
-- 확인
-
-```
-kkf get svc
-NAME                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE
-...
-my-cluster-kafka-exporter             ClusterIP   10.43.246.16    <none>        80/TCP                                4s
-...
-```
-
-
-
-
-
-- exporter pod 에서 metric 정상 수집 여부 확인
-
-```sh
-$ kkf exec -it my-cluster-kafka-exporter-79b8c986f8-wg259 -- bash
-
-
-$ curl localhost:9404/metrics
-# HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
-# TYPE go_gc_duration_seconds summary
-go_gc_duration_seconds{quantile="0"} 0.00037912
-go_gc_duration_seconds{quantile="0.25"} 0.00037912
-go_gc_duration_seconds{quantile="0.5"} 0.00037912
-go_gc_duration_seconds{quantile="0.75"} 0.00037912
-go_gc_duration_seconds{quantile="1"} 0.00037912
-go_gc_duration_seconds_sum 0.00037912
-go_gc_duration_seconds_count 1
-# HELP go_goroutines Number of goroutines that currently exist.
-# TYPE go_goroutines gauge
-go_goroutines 19
-# HELP go_info Information about the Go environment.
-# TYPE go_info gauge
-go_info{version="go1.17.1"} 1
-
-
-$ curl my-cluster-kafka-exporter.kafka.svc/metrics
-<-- ok
-```
-
-
-
-
-
-## 2) prometheus 
-
-
-
-### (1) 권한부여
-
-- openshift 에서 수행시 anyuid 권한이 필요하다.
-
-```
-# 권한부여시
-oc adm policy add-scc-to-user    anyuid -z prometheus-server -n kafka
-
-# 권한삭제시
-oc adm policy remove-scc-from-user anyuid  -z prometheus-server -n kafka
-
-```
-
-
-
-### (2) helm deploy
-
-```sh
-$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-
-$ helm fetch prometheus-community/prometheus
-
-$ tar -zxvf prometheus-15.10.1.tgz
-
-
-
-$ helm -n kafka list
-
-$ helm -n kafka install prometheus prometheus-community/prometheus \
-  --set alertmanager.enabled=false \
-  --set configmapReload.prometheus.enabled=false \
-  --set configmapReload.alertmanager.enabled=false \
-  --set kubeStateMetrics.enabled=false \
-  --set nodeExporter.enabled=false \
-  --set server.enabled=true \
-  --set server.image.repository=quay.io/prometheus/prometheus \
-  --set server.namespaces[0]=kafka \
-  --set server.ingress.enabled=false \
-  --set server.persistentVolume.enabled=false \
-  --set pushgateway.enabled=false \
-  --dry-run=true > dry-run.yaml
-
-
-## 확인
-$ helm3 -n kafka ls
-NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
-prometheus      kafka           1               2022-06-26 00:45:11.7836364 +0900 KST   deployed        prometheus-15.10.1      2.34.0
-   
-
-## 삭제
-$ helm3 -n kafka delete prometheus 
-```
-
-
-
-
-
-### (3) prometheus svc 확인 
-
-```sh
-$ kkf get svc
-NAME                                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                               AGE
-...
-prometheus-server                     ClusterIP   172.30.246.251   <none>        80/TCP                                68s
-
-```
-
-
-
-
-
-### (4) ingress
-
-````sh
-
-$ cd ~/githubrepo/ktds-edu2
-
-$ cat ./kafka/strimzi/monitoring/21.prometheus-ingress.yaml
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: prometheus-ingress
-  annotations:
-    kubernetes.io/ingress.class: "traefik"
-spec:
-  rules:
-  - host: "prometheus.kafka.ktcloud.211.254.212.105.nip.io"
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: prometheus-server
-            port:
-              number: 80
-
-
-
-$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/21.prometheus-ingress.yaml
-````
-
-- 확인
-
-![image-20220626124323035](kafka.assets/image-20220626124323035.png)
-
-
-
-### (5) route
-
-openshift 환경일때는 route 를 생성한다.
-
-````sh
-
-$ cd ~/githubrepo/ktds-edu2
-
-$ cat ./kafka/strimzi/monitoring/22.prometheus-route.yaml
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: prometheus-route
-  namespace: kafka-system
-  labels:
-    app: prometheus
-    app.kubernetes.io/managed-by: Helm
-    chart: prometheus-15.8.4
-    component: server
-    heritage: Helm
-    release: prometheus
-spec:
-  host: prometheus-kafka.apps.211-34-231-82.nip.io
-  to:
-    kind: Service
-    name: prometheus-server
-    weight: 100
-  port:
-    targetPort: http
-    
-$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/22.prometheus-route.yaml
-````
-
-
-
-
-
-
-
-### (6) configmap
-
-exporter 주소를 추가해야 한다.
-
-````sh
-$ kubectl -n kafka edit configmap prometheus-server
----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: prometheus-server
-  namespace: kafka
-  ...
-data:
-  ...
-  prometheus.yml: |
-    global:
-      evaluation_interval: 1m
-      scrape_interval: 1m
-      scrape_timeout: 10s
-    rule_files:
-    - /etc/config/recording_rules.yml
-    - /etc/config/alerting_rules.yml
-    - /etc/config/rules
-    - /etc/config/alerts
-    scrape_configs: 
-    
-    ## 아래 부분 추가
-    - job_name: kafka-exporter
-      metrics_path: /metrics
-      scrape_interval: 10s
-      scrape_timeout: 10s
-      static_configs:
-      - targets:
-        - my-cluster-kafka-exporter.kafka.svc
-     ...
-````
-
-- 추가후 prometheus server 재기동
-
-```sh
-
-$ kkf get pod
-NAME                                          READY   STATUS    RESTARTS      AGE
-...
-prometheus-server-5dc67b6855-cdm54            1/1     Running   0             24m
-...
-
-
-$kkf delete pod prometheus-server-5dc67b6855-cdm54
-pod "prometheus-server-5dc67b6855-cdm54" deleted
-
-
-$kkf get pod
-NAME                                          READY   STATUS    RESTARTS      AGE
-my-cluster-kafka-exporter-79b8c986f8-wg259    1/1     Running   1 (60m ago)   60m
-prometheus-server-5dc67b6855-67xts            0/1     Running   0             9s
-
-```
-
-
-
-- status / target 에서 아래와 같이 kafka-exporter 가 추가된것을 확인한다.
-
-![image-20220626124700665](kafka.assets/image-20220626124700665.png)
-
-
-
-
-
-## 3) Grafana deploy
-
-- deploy
-
-```sh
-
-$ cd ~/githubrepo/ktds-edu2
-
-$ cat ./kafka/strimzi/monitoring/31.grafana-deployment.yaml
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: grafana
-  namespace: kafka
-  labels:
-    app: strimzi
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      name: grafana
-  template:
-    metadata:
-      labels:
-        name: grafana
-    spec:
-      containers:
-      - name: grafana
-        image: docker.io/grafana/grafana:7.3.7
-        ports:
-        - name: grafana
-          containerPort: 3000
-          protocol: TCP
-        volumeMounts:
-        - name: grafana-data
-          mountPath: /var/lib/grafana
-        - name: grafana-logs
-          mountPath: /var/log/grafana
-        readinessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 15
-          periodSeconds: 20
-      volumes:
-      - name: grafana-data
-        emptyDir: {}
-      - name: grafana-logs
-        emptyDir: {}
-        
-$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/31.grafana-deployment.yaml
-deployment.apps/grafana created
-
-```
-
-
-
-
-- service
-
-```sh
-
-$ cd ~/githubrepo/ktds-edu2
-
-$ cat ./kafka/strimzi/monitoring/32.grafana-svc.yaml
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: grafana
-  namespace: kafka
-  labels:
-    app: strimzi
-spec:
-  ports:
-  - name: grafana
-    port: 3000
-    targetPort: 3000
-    protocol: TCP
-  selector:
-    name: grafana
-  type: ClusterIP
-
-$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/32.grafana-svc.yaml
-service/grafana created
-
-
-
-```
-
-
-
-
-
-- ingress
-
-```sh
-
-$ cat ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: grafana-ingress
-  annotations:
-    kubernetes.io/ingress.class: "traefik"
-spec:
-  rules:
-  - host: "grafana.kafka.ktcloud.211.254.212.105.nip.io"
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: grafana
-            port:
-              number: 3000
-
-
-$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
-ingress.networking.k8s.io/grafana-ingress created
-
-```
-
-
-
-- route
-  - openshift 환경에서만 사용
-
-
-```yaml
-$ cat ./kafka/strimzi/monitoring/34.grafana-route.yaml
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: grafana-kafka-route
-  namespace: kafka
-  labels:
-    app: strimzi
-spec:
-  host: grafana-kafka.apps.211-34-231-82.nip.io
-  to:
-    kind: Service
-    name: grafana
-    weight: 100
-  port:
-    targetPort: grafana
-  wildcardPolicy: None
-$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/34.grafana-route.yaml
-```
-
-
-
-- 로그인
-
-기본 Grafana 사용자 이름과 암호는 모두 admin 이다.
-
-
-
- 
-
-## 4) Grafana Monitoring
-
-### (1) Grafana 접속
-
-http://grafana-kafka.apps.211-34-231-82.nip.io
-
-
-
-
-
-
-
-### (2) promehteus 연동
-
-- 메뉴 : Data Sources / Promehteus 
-- URL : prometheus-server  입력
-
-
-
-### (3) strimzi exporter dashboard import
-
-- 메뉴: Dashboards / Manage
-- import : 11285입력
-- 참고링크 
-
-https://grafana.com/grafana/dashboards/11285-strimzi-kafka-exporter
-
-
-
-### (4) 확인
-
-- 메뉴 위치 : Dashboards > Manage > Strimzi Kafka Exporter
-
-![image-20220626111254872](kafka.assets/image-20220626111254872.png)
 
 
 

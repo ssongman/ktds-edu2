@@ -1,19 +1,75 @@
 
 
 
-# Redis Cluster Setting
+# Redis On Kubernetes
 
 
 
-# 1. 개요
+# 1. Redis 개요
+
+## 1) Redis 개요
+
+- [Redis](https://redis.io/) (REmote DIctionary Server의 약자)는 데이터베이스, 캐시 또는 메시지 브로커로 자주 사용되는 오픈 소스 인메모리 DB 
+
+
+- list, map, set, and sorted set 과 같은 고급 데이터 유형을 저장하고 조작할 수 있음
+- Redis는 다양한 형식의 키를 허용하고 서버에서 직접 수행되므로 클라이언트의 작업 부하를 줄일 수 있음 
+
+- 기본적으로 DB 전체를 메모리에 보유하며 Disk 는 지속성을 위해서만 사용됨 
+
+- Redis는 인기 있는 데이터 스토리지 솔루션이며 GitHub, Pinterest, Snapchat, Twitter, StackOverflow, Flickr 등과 같은 거대 기술 기업에서 사용됨
 
 
 
-## 1.1 redis 와 redis-cluster
+### Redis를 사용하는 이유
 
-Redis는 애플리케이션을 위한 확장 가능한 오픈 소스 분산 인메모리 캐시이다. 문자열, 해시, 목록, 집합 및 정렬된 집합의 형태로 데이터를 저장하고 제공하는 데 사용할 수 있다.
+- 아주 빠름. ANSI C로 작성되었으며 Linux, Mac OS X 및 Solaris와 같은 POSIX 시스템에서 실행됨
+- Redis는 종종 가장 인기 있는 키/값 데이터베이스 및 컨테이너와 함께 사용되는 가장 인기 있는 NoSQL 데이터베이스로 선정됨
+- 캐싱 솔루션은 클라우드 데이터베이스 백엔드에 대한 호출 수를 줄임
+- 클라이언트 API 라이브러리를 통해 애플리케이션에서 액세스할 수 있음
+- Redis는 인기 있는 모든 프로그래밍 언어에서 지원됨
+- 오픈 소스이며 안정적임
 
-일단 Redis 와 Redis-cluster 와의 차이점은 아래와 같다.
+
+
+### 실제 세계에서 Redis 사용
+
+- Twitter는 Redis 클러스터 내의 모든 사용자에 대한 타임라인을 저장함
+- Pinterest는 데이터가 수백 개의 인스턴스에 걸쳐 샤딩되는 Redis Cluster에 사용자 팔로어 그래프를 저장함
+- Github은 Redis를 대기열로 사용함
+
+
+
+
+
+## 2) Redis Cluster
+
+
+
+### (1) Redis Cluster
+
+- [Redis 클러스터](https://redis.io/topics/cluster-tutorial) 는 DB를 분할하여 데이터베이스를 확장하여 복원력을 향상시키도록 설계된 Redis Instance 들의 집합임
+
+- 만약 Master에 연결할 수 없으면 해당 Slave가 Master로 승격됨 
+- 3개의 Master노드로 구성된 최소 Redis 클러스터에서 각 Master 노드에는 단일 Slave 노드가 있습니다(최소 장애 조치 허용)
+- 각 Master노드에는 0에서 16,383 사이의 해시 슬롯 범위가 할당됨 
+- 노드 A는 0에서 5000까지의 해시 슬롯, 노드 B는 5001에서 10000까지, 노드 C는 10001에서 16383까지 포함됨 
+
+- 클러스터 내부 통신은 internal bus를 통해 이루어지며 클러스터에 대한 정보를 전파하거나 새로운 노드를 발견하기 위해 gossip protocol을 사용. 
+
+- 데이터는 여러 노드 간에 자동으로 분할되므로 노드의 하위 집합에 장애가 발생하거나 클러스터의 나머지 부분과 통신할 수 없는 경우에도 안정적인 서비스 제공
+
+
+
+
+
+![kubernetes-deployment](redis.assets/rancher_blog_deploying_kubernetes_1.png)
+
+
+
+
+
+### (2) Redis 와 Redis-cluster 와의 차이점
 
 | Redis                                                  | Redis Cluster                                                |
 | ------------------------------------------------------ | ------------------------------------------------------------ |
@@ -27,7 +83,9 @@ Redis는 애플리케이션을 위한 확장 가능한 오픈 소스 분산 인�
 
 
 
-# 2. Redis Cluster Install Using Helm
+# 2. Redis Cluster Install
+
+kubernetes 기반에서 Redis 를 설치해보자.
 
 참조link : https://github.com/bitnami/charts/tree/master/bitnami/redis-cluster
 
@@ -101,15 +159,9 @@ drwxr-xr-x 2 root root  4096 Jun 26 05:37 templates/
 
 ### (4) namespace 생성
 
-
-
 ```sh
-
 $ kubectl create ns redis-system
-
 ```
-
-
 
 
 
@@ -389,77 +441,11 @@ my-release-redis-cluster-headless   ClusterIP   None          <none>        6379
 
 
 
+## 4) Internal Access
 
+redis client를 cluster 내부에서 실행후 접근하는 방법을 알아보자.
 
-## 4) CleanUp & Update
-
-### (1) delete
-
-helm delete 명령을 이용하면 helm chart 로 설치된 모든 리소스가 한꺼번에 삭제된다.
-
-```sh
-
-## 삭제하기
-$ helm3 -n redis-system delete my-release
-
-```
-
-
-
-### (2) update 
-
-node 추가와 같은 helm 기반 update 가 필요할때는 아래와 같은 방식으로 update 를 수행한다.
-
-```sh
-
-## update sample 1
-$ helm3 upgrade --timeout 600s my-release \
-    --set "password=${REDIS_PASSWORD},cluster.nodes=7,cluster.update.addNodes=true,cluster.update.currentNumberOfNodes=6" bitnami/redis-cluster
-
-## update sample 2
-$ helm upgrade <release> \
-  --set "password=${REDIS_PASSWORD}
-  --set cluster.externalAccess.enabled=true
-  --set cluster.externalAccess.service.type=LoadBalancer
-  --set cluster.externalAccess.service.loadBalancerIP[0]=<loadBalancerip-0>
-  --set cluster.externalAccess.service.loadBalancerIP[1]=<loadbalanacerip-1>
-  --set cluster.externalAccess.service.loadBalancerIP[2]=<loadbalancerip-2>
-  --set cluster.externalAccess.service.loadBalancerIP[3]=<loadbalancerip-3>
-  --set cluster.externalAccess.service.loadBalancerIP[4]=<loadbalancerip-4>
-  --set cluster.externalAccess.service.loadBalancerIP[5]=<loadbalancerip-5>
-  --set cluster.externalAccess.service.loadBalancerIP[6]=
-  --set cluster.nodes=7
-  --set cluster.init=false bitnami/redis-cluster
-
-
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 3. Internal Access
-
-redis client를 동 cluster 에 실행하여 접근하는 방법을 알아보자.
-
-
-
-## 1) Internal Access
-
-
-
-
-
-### (1) Redis-clinet 실행
+### (1) Redis-client 실행
 
 먼저 아래와 같이 동일한 Namespace 에 redis-client 를 실행한다.
 
@@ -531,7 +517,6 @@ cluster_stats_messages_received:763
 
 ## service 명으로 cluster mode 접근
 $ redis-cli -h my-release-redis-cluster -c -a new1234
-
 
 
 ## set 명령 수행
@@ -610,15 +595,71 @@ my-release-redis-cluster:6379> get b
 
 
 
+## 5) Clean Up & Update
+
+### (1) delete
+
+helm delete 명령을 이용하면 helm chart 로 설치된 모든 리소스가 한꺼번에 삭제된다.
+
+```sh
+## 삭제하기
+$ helm3 -n redis-system delete my-release
+
+```
+
+
+
+### (2) update 
+
+node 추가와 같은 helm 기반 update 가 필요할때는 아래와 같은 방식으로 update 를 수행한다.
+
+```sh
+## update sample 1
+$ helm3 upgrade --timeout 600s my-release \
+    --set "password=${REDIS_PASSWORD},cluster.nodes=7,cluster.update.addNodes=true,cluster.update.currentNumberOfNodes=6" bitnami/redis-cluster
+
+## update sample 2
+$ helm upgrade <release> \
+  --set "password=${REDIS_PASSWORD}
+  --set cluster.externalAccess.enabled=true
+  --set cluster.externalAccess.service.type=LoadBalancer
+  --set cluster.externalAccess.service.loadBalancerIP[0]=<loadBalancerip-0>
+  --set cluster.externalAccess.service.loadBalancerIP[1]=<loadbalanacerip-1>
+  --set cluster.externalAccess.service.loadBalancerIP[2]=<loadbalancerip-2>
+  --set cluster.externalAccess.service.loadBalancerIP[3]=<loadbalancerip-3>
+  --set cluster.externalAccess.service.loadBalancerIP[4]=<loadbalancerip-4>
+  --set cluster.externalAccess.service.loadBalancerIP[5]=<loadbalancerip-5>
+  --set cluster.externalAccess.service.loadBalancerIP[6]=
+  --set cluster.nodes=7
+  --set cluster.init=false bitnami/redis-cluster
+
+
+
+```
 
 
 
 
-# 4. External Access
 
-External (Cluster 외부) 에서 access 하기 위해서 node port 를 이용할 것이다.
 
-하지만 redis-cluster 는 원격지에서 접속시 cluster node 들에 대한 DNS 를 지원하지 않는다.
+
+
+
+
+
+# 3. Redis Install
+
+External (Cluster 외부) 에서 access 하기 위해서 node port 를 이용해야 한다.
+
+하지만 Redis Cluster 의 경우 접근해야 할 Master Node 가 두개 이상이며 해당 데이터가 저장된 위치를 찾아 redirect 된다.
+
+이때 redirect 가 정확히 이루어지려면 Client 가 인식가능한 Node 주소를 알아야 한다.
+
+하지만 Redis Cluster 는 원격지 Client 가 인식가능한 Node 들의 DNS를 지원하지 않는다.
+
+결국 Redis Cluster 는 PRD환경과 같이 Kubernetes Cluster 내에서는 사용가능하지만 
+
+개발자 PC에서 연결이 필요한 DEV환경에서는 적절치 않다.
 
 그러므로 redis-cluster 가 아닌 redis 로 설치 하여 테스트를 진행한다.
 
@@ -714,7 +755,6 @@ my-release-redis-master.redis-system.svc.cluster.local for read/write operations
 my-release-redis-replicas.redis-system.svc.cluster.local for read-only operations (port 6379)
 
 
-
 $ helm -n redis-system ls
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
 my-release      redis-system    1               2022-06-26 06:59:30.08278938 +0000 UTC  deployed        redis-cluster-7.6.3     6.2.7
@@ -725,7 +765,7 @@ $ helm -n redis-system delete my-release
 
 ```
 
-
+my-release-redis-master 는 read/write 용도로 사용되며 my-release-redis-replicas 는 read-only 용도로 사용된다.
 
 
 
@@ -817,6 +857,144 @@ $ docker exec -it redis-client bash
 
 
 
+# 4. P3X Redis UI
+
+참고링크
+https://www.electronjs.org/apps/p3x-redis-ui
+
+https://github.com/patrikx3/redis-ui/blob/master/k8s/manifests/service.yaml
+
+Redis DB 관리를 위한  편리한 데이터베이스 GUI app이며  WEB  UI 와 Desktop App 에서 작동한다.
+
+P3X Web UI 를 kubernetes 에 설치해 보자.
+
+
+
+## 1) redis-ui deploy
+
+아래 yaml  manifest file을 활용하여 configmap, deployment, service, ingress 를 일괄 실행한다.
+
+```sh
+$ cd ~/githubrepo/ktds-edu2
+
+
+$ cat ./redis/redisui/11.p3xredisui.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: p3x-redis-ui-settings
+data:
+  .p3xrs-conns.json: |
+    {
+      "list": [
+        {
+          "name": "cluster",
+          "host": "my-release-redis-master",
+          "port": 6379,
+          "password": "new1234",
+          "id": "unique"
+        }
+      ],
+      "license": ""
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p3x-redis-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: p3x-redis-ui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: p3x-redis-ui
+    spec:
+      containers:
+      - name: p3x-redis-ui
+        image: patrikx3/p3x-redis-ui
+        ports:
+        - name: p3x-redis-ui
+          containerPort: 7843
+        volumeMounts:
+        - name: p3x-redis-ui-settings
+          mountPath: /settings/.p3xrs-conns.json
+          subPath: .p3xrs-conns.json
+      volumes:
+      - name: p3x-redis-ui-settings
+        configMap:
+          name: p3x-redis-ui-settings
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: p3x-redis-ui-service
+  labels:
+    app.kubernetes.io/name: p3x-redis-ui-service
+spec:
+  ports:
+  - port: 7843
+    targetPort: p3x-redis-ui
+    name: p3x-redis-ui
+  selector:
+    app.kubernetes.io/name: p3x-redis-ui
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: p3x-redis-ui-ingress
+  annotations:
+    # kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: traefik
+    # cert-manager support
+    # cert-manager.io/cluster-issuer: letsencrypt
+    # oauth2-proxy support
+    # nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
+    # nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
+spec:
+  # tls:
+  # - hosts: [p3x-redis-ui.example.com]
+  #   secretName: p3x-redis-ui-tls
+  rules:
+  - host: p3xredisui.redis-system.ktcloud.211.254.212.105.nip.io
+    http:
+      paths:
+      - backend:
+          service:
+            name: p3x-redis-ui-service
+            port:
+              number: 7843
+        path: /
+        pathType: Prefix
+---
+
+# install
+$ kubectl -n redis-system apply -f ./redis/redisui/11.p3xredisui.yaml
+
+
+# 삭제시
+$ kubectl -n redis-system delete -f ./redis/redisui/11.p3xredisui.yaml
+
+
+
+```
+
+
+
+## 2) ui 확인
+
+http://p3xredisui.redis-system.ktcloud.211.254.212.105.nip.io/main/key/people
+
+![image-20220626181624749](redis.assets/image-20220626181624749.png)
+
+
+
+
+
+
+
 
 
 
@@ -880,7 +1058,7 @@ OK
 
 
 
-## 2)읽기전용 계정 생성
+## 2) 읽기전용 계정 생성
 
 - 읽기전용 계정 테스트
 
@@ -969,163 +1147,38 @@ OK
 
 
 
-# 6. redis-ui(p3x)
-
-
-
-```
-참고링크
-https://www.electronjs.org/apps/p3x-redis-ui
-
-https://github.com/patrikx3/redis-ui/blob/master/k8s/manifests/service.yaml
-
-```
-
-
-
-
-
-
-
-## 2) redis-ui deploy
-
-```sh
-
-$ cd ~/githubrepo/ktds-edu2
-
-
-$ cat ./redis/redisui/11.p3xredisui.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: p3x-redis-ui-settings
-data:
-  .p3xrs-conns.json: |
-    {
-      "list": [
-        {
-          "name": "cluster",
-          "host": "my-release-redis-master",
-          "port": 6379,
-          "password": "new1234",
-          "id": "unique"
-        }
-      ],
-      "license": ""
-    }
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: p3x-redis-ui
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: p3x-redis-ui
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: p3x-redis-ui
-    spec:
-      containers:
-      - name: p3x-redis-ui
-        image: patrikx3/p3x-redis-ui
-        ports:
-        - name: p3x-redis-ui
-          containerPort: 7843
-        volumeMounts:
-        - name: p3x-redis-ui-settings
-          mountPath: /settings/.p3xrs-conns.json
-          subPath: .p3xrs-conns.json
-      volumes:
-      - name: p3x-redis-ui-settings
-        configMap:
-          name: p3x-redis-ui-settings
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: p3x-redis-ui-service
-  labels:
-    app.kubernetes.io/name: p3x-redis-ui-service
-spec:
-  ports:
-  - port: 7843
-    targetPort: p3x-redis-ui
-    name: p3x-redis-ui
-  selector:
-    app.kubernetes.io/name: p3x-redis-ui
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: p3x-redis-ui-ingress
-  annotations:
-    # kubernetes.io/ingress.class: nginx
-    kubernetes.io/ingress.class: traefik
-
-    # cert-manager support
-    # cert-manager.io/cluster-issuer: letsencrypt
-
-    # oauth2-proxy support
-    # nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
-    # nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
-spec:
-  # tls:
-  # - hosts: [p3x-redis-ui.example.com]
-  #   secretName: p3x-redis-ui-tls
-  rules:
-  - host: p3xredisui.redis-system.ktcloud.211.254.212.105.nip.io
-    http:
-      paths:
-      - backend:
-          service:
-            name: p3x-redis-ui-service
-            port:
-              number: 7843
-        path: /
-        pathType: Prefix
----
-
-
-$ kubectl -n redis-system apply -f ./redis/redisui/11.p3xredisui.yaml
-
-
-# 삭제시
-$ kubectl -n redis-system delete -f ./redis/redisui/11.p3xredisui.yaml
-
-
-
-```
-
-
-
-
-
-# 7. Java redis test
+# 6. Java Sample
 
 
 
 ## 1) Jedis vs Lettuce
 
+참고: https://jojoldu.tistory.com/418
+
+- Java 의 Redis Client 는 크게 Jedis 와 Lettuce  가 있음.
+
+- 초기에는 Jedis 를 많이 사용했으나 현재는 Lettuce 를 많이 사용하는 추세임.
+
+- Jedis 의 단점
+  -  멀티 쓰레드 불안정, Pool 한계 등
+- Lettuce 의 장점
+  - Netty 기반으로 비동기 지원 가능 등
+
+- 결국 Spring Boot 2.0 부터 Jedis 가 기본 클라이언트에서 deprecated 되고 Lettuce 가 탑재되었음
 
 
-Java 의 Redis Client 는 크게 두 가지가 있습니다.
 
-Jedis 와 Lettuce 인데요.
 
-원래 Jedis 를 많이 사용했으나 여러 가지 단점 (멀티 쓰레드 불안정, Pool 한계 등등..) 과 Lettuce 의 장점 (Netty 기반이라 비동기 지원 가능) 때문에 Lettuce 로 추세가 넘어가고 있었습니다.
 
-그러다 결국 Spring Boot 2.0 부터 Jedis 가 기본 클라이언트에서 deprecated 되고 Lettuce 가 탑재되었습니다.
+## 2) Spring Boot Sample
 
+sample source github link
 
 
 
 
 
-
-pom.xml
+- pom.xml
 
 ```xml
 ...
@@ -1139,9 +1192,7 @@ pom.xml
 
 
 
-
-
-
+- application.yaml
 
 ```yaml
 spring:
@@ -1158,7 +1209,25 @@ spring:
 
 
 
+- 참고 : 각 항목들에 대한 설명
 
+| 변수                         | 기본값                             | 설명                                                         |
+| ---------------------------- | ---------------------------------- | ------------------------------------------------------------ |
+| spring.redis.database        | 0                                  | 커넥션  팩토리에 사용되는 데이터베이스 인덱스                |
+| spring.redis.host            | localhost                          | 레디스  서버 호스트                                          |
+| spring.redis.password        | 레디스  서버 로그인 패스워드       |                                                              |
+| spring.redis.pool.max-active | 8                                  | pool에  할당될 수 있는 커넥션 최대수 (음수로 하면 무제한)    |
+| spring.redis.pool.max-idle   | 8                                  | pool의  "idle" 커넥션 최대수 (음수로 하면 무제한)            |
+| spring.redis.pool.max-wait   | -1                                 | pool이  바닥났을 때 예외발생 전에 커넥션 할당 차단의 최대 시간 (단위: 밀리세컨드, 음수는 무제한 차단) |
+| spring.redis.pool.min-idle   | 0                                  | 풀에서  관리하는 idle 커넥션의 최소 수 대상 (양수일 때만 유효) |
+| spring.redis.port            | 6379                               | 레디스  서버 포트                                            |
+| spring.redis.sentinel.master | 레디스  서버 이름                  |                                                              |
+| spring.redis.sentinel.nodes  | 호스트:포트  쌍 목록 (콤마로 구분) |                                                              |
+| spring.redis.timeout         | 0                                  | 커넥션  타임아웃 (단위: 밀리세컨드)                          |
+
+
+
+Redis에 Connection을 하기 위한 RedisConnectionFactory 생성
 
 ```java
 @Configuration
@@ -1178,11 +1247,7 @@ public class RedisConfig {
 
 ```
 
-
-
-## 2) 
-
-
+**RedisConnectionFactory 인터페이스를 통해 LettuceConnectionFactory를 생성하여 반환합니다.**
 
 
 
@@ -1205,53 +1270,15 @@ public class Person {
 }
 ```
 
-- Redis 에 저장할 자료구조인 객체를 정의합니다.
+- Redis 에 저장할 자료구조인 객체를 정의함
 
-- 일반적인 객체 선언 후
-
-   
-
-  ```
-  @RedisHash
-  ```
-
-   
-
-  를 붙이면 됩니다.
-
-  - `value` : Redis 의 keyspace 값으로 사용됩니다.
-  - `timeToLive` : 만료시간을 seconds 단위로 설정할 수 있습니다. 기본값은 만료시간이 없는 -1L 입니다.
-
-- ```
-  @Id
-  ```
-
-   
-
-  어노테이션이 붙은 필드가 Redis Key 값이 되며
-
-   
-
-  ```
-  null
-  ```
-
-   
-
-  로 세팅하면 랜덤값이 설정됩니다.
-
-  - keyspace 와 합쳐져서 레디스에 저장된 최종 키 값은 `keyspace:id` 가 됩니다.
-
-
-
-
-
-```java
-```
-
-
-
-
+- 일반적인 객체 선언 후 @RedisHash 를 붙임
+  - value  값이 Redis 의 key prefix 로 사용됨
+  - timeToLive : 만료시간을 seconds 단위로 설정할 수 있음 
+    - 기본값은 만료시간이 없는 -1L 임.
+- @Id 어노테이션이 붙은 필드가 Redis Key 값이 되며 null 로 세팅하면 랜덤값이 설정됨
+  - keyspace 와 합쳐져서 레디스에 저장된 최종 키 값은 keyspace:id 가 됨
+    - key 생성형식: "people:{id}"
 
 
 
@@ -1264,11 +1291,13 @@ public class Person {
 
 
 - pod로 실행
+
 ```
 oc -n redis-system run pythonfortest --image=ktis-bastion01.container.ipc.kt.com:5000/admin/python:3.7 -- sleep 365d
 ```
 
 - deploy로 실행
+
 ```
 oc -n redis-system create deploy pythonfortest --image=ktis-bastion01.container.ipc.kt.com:5000/admin/python:3.7 -- sleep 365d
 ```
