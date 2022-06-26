@@ -2768,7 +2768,9 @@ spec:
 $ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/21.prometheus-ingress.yaml
 ````
 
+- 확인
 
+![image-20220626124323035](kafka.assets/image-20220626124323035.png)
 
 
 
@@ -2817,7 +2819,7 @@ $ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/22.prometheus-route.yaml
 exporter 주소를 추가해야 한다.
 
 ````sh
-$ kubectl -n kafka edit prometheus-server
+$ kubectl -n kafka edit configmap prometheus-server
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -2850,6 +2852,34 @@ data:
      ...
 ````
 
+- 추가후 prometheus server 재기동
+
+```sh
+
+$ kkf get pod
+NAME                                          READY   STATUS    RESTARTS      AGE
+...
+prometheus-server-5dc67b6855-cdm54            1/1     Running   0             24m
+...
+
+
+$kkf delete pod prometheus-server-5dc67b6855-cdm54
+pod "prometheus-server-5dc67b6855-cdm54" deleted
+
+
+$kkf get pod
+NAME                                          READY   STATUS    RESTARTS      AGE
+my-cluster-kafka-exporter-79b8c986f8-wg259    1/1     Running   1 (60m ago)   60m
+prometheus-server-5dc67b6855-67xts            0/1     Running   0             9s
+
+```
+
+
+
+- status / target 에서 아래와 같이 kafka-exporter 가 추가된것을 확인한다.
+
+![image-20220626124700665](kafka.assets/image-20220626124700665.png)
+
 
 
 
@@ -2862,7 +2892,7 @@ data:
 
 $ cd ~/githubrepo/ktds-edu2
 
-$ cat ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
+$ cat ./kafka/strimzi/monitoring/31.grafana-deployment.yaml
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -2911,7 +2941,9 @@ spec:
       - name: grafana-logs
         emptyDir: {}
         
-$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/31.grafana-deployment.yaml
+deployment.apps/grafana created
+
 ```
 
 
@@ -2943,6 +2975,10 @@ spec:
   type: ClusterIP
 
 $ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/32.grafana-svc.yaml
+service/grafana created
+
+
+
 ```
 
 
@@ -2972,10 +3008,12 @@ spec:
           service:
             name: grafana
             port:
-              number: 80
+              number: 3000
 
 
 $ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
+ingress.networking.k8s.io/grafana-ingress created
+
 ```
 
 
@@ -3020,7 +3058,7 @@ $ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/34.grafana-route.yaml
 
 ### Grafana 모니터링 URL
 
-http://grafana-kafka.apps.211-34-231-82.nip.io/datasources
+http://grafana-kafka.apps.211-34-231-82.nip.io
 
 
 
