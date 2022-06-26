@@ -83,5 +83,9 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: p3x-redis-ui-service
-          servicePort: 7843
+          service:
+            name: p3x-redis-ui-service
+            port:
+              number: 7843
+        path: /
+        pathType: Prefix

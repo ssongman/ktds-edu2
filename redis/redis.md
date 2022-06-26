@@ -974,10 +974,128 @@ OK
 
 
 ```
-
+참고링크
 https://www.electronjs.org/apps/p3x-redis-ui
 
 https://github.com/patrikx3/redis-ui/blob/master/k8s/manifests/service.yaml
+
+```
+
+
+
+
+
+
+
+## 2) redis-ui deploy
+
+```sh
+
+$ cd ~/githubrepo/ktds-edu2
+
+
+$ cat ./redis/redisui/11.p3xredisui.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: p3x-redis-ui-settings
+data:
+  .p3xrs-conns.json: |
+    {
+      "list": [
+        {
+          "name": "cluster",
+          "host": "my-release-redis-master",
+          "port": 6379,
+          "password": "new1234",
+          "id": "unique"
+        }
+      ],
+      "license": ""
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p3x-redis-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: p3x-redis-ui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: p3x-redis-ui
+    spec:
+      containers:
+      - name: p3x-redis-ui
+        image: patrikx3/p3x-redis-ui
+        ports:
+        - name: p3x-redis-ui
+          containerPort: 7843
+        volumeMounts:
+        - name: p3x-redis-ui-settings
+          mountPath: /settings/.p3xrs-conns.json
+          subPath: .p3xrs-conns.json
+      volumes:
+      - name: p3x-redis-ui-settings
+        configMap:
+          name: p3x-redis-ui-settings
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: p3x-redis-ui-service
+  labels:
+    app.kubernetes.io/name: p3x-redis-ui-service
+spec:
+  ports:
+  - port: 7843
+    targetPort: p3x-redis-ui
+    name: p3x-redis-ui
+  selector:
+    app.kubernetes.io/name: p3x-redis-ui
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: p3x-redis-ui-ingress
+  annotations:
+    # kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: traefik
+
+    # cert-manager support
+    # cert-manager.io/cluster-issuer: letsencrypt
+
+    # oauth2-proxy support
+    # nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
+    # nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
+spec:
+  # tls:
+  # - hosts: [p3x-redis-ui.example.com]
+  #   secretName: p3x-redis-ui-tls
+  rules:
+  - host: p3xredisui.redis-system.ktcloud.211.254.212.105.nip.io
+    http:
+      paths:
+      - backend:
+          service:
+            name: p3x-redis-ui-service
+            port:
+              number: 7843
+        path: /
+        pathType: Prefix
+---
+
+
+$ kubectl -n redis-system apply -f ./redis/redisui/11.p3xredisui.yaml
+
+
+# 삭제시
+$ kubectl -n redis-system delete -f ./redis/redisui/11.p3xredisui.yaml
+
+
 
 ```
 
@@ -1025,11 +1143,17 @@ pom.xml
 
 
 
-```
+```yaml
 spring:
   redis:
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 2
     host: localhost
     port: 6379
+    password: 'new1234'
 ```
 
 
@@ -1056,7 +1180,74 @@ public class RedisConfig {
 
 
 
+## 2) 
 
+
+
+
+
+```java
+@Getter
+@RedisHash(value = "people", timeToLive = 30)
+public class Person {
+
+    @Id
+    private String id;
+    private String name;
+    private Integer age;
+    private LocalDateTime createdAt;
+
+    public Person(String name, Integer age) {
+        this.name = name;
+        this.age = age;
+        this.createdAt = LocalDateTime.now();
+    }
+}
+```
+
+- Redis 에 저장할 자료구조인 객체를 정의합니다.
+
+- 일반적인 객체 선언 후
+
+   
+
+  ```
+  @RedisHash
+  ```
+
+   
+
+  를 붙이면 됩니다.
+
+  - `value` : Redis 의 keyspace 값으로 사용됩니다.
+  - `timeToLive` : 만료시간을 seconds 단위로 설정할 수 있습니다. 기본값은 만료시간이 없는 -1L 입니다.
+
+- ```
+  @Id
+  ```
+
+   
+
+  어노테이션이 붙은 필드가 Redis Key 값이 되며
+
+   
+
+  ```
+  null
+  ```
+
+   
+
+  로 세팅하면 랜덤값이 설정됩니다.
+
+  - keyspace 와 합쳐져서 레디스에 저장된 최종 키 값은 `keyspace:id` 가 됩니다.
+
+
+
+
+
+```java
+```
 
 
 
