@@ -360,8 +360,8 @@ $ kubectl -n kafka get secret my-user -o jsonpath='{.data.password}' | base64 -d
 pprOnk80CDfo
 
 # user/pass 
-  my-user / pprOnk80CDfo
-  my-user / KV9tDU0AY4Wu
+  my-user / pprOnk80CDfo   - KT Cloud 기준
+  my-user / KV9tDU0AY4Wu   - Openshift 기준
   
 ```
 
@@ -553,12 +553,12 @@ Kafka에는 자체 검색 프로토콜이 있습니다. Kafka 클라이언트가
 
 ### (3) 클러스터 내부에서 연결
 
-Kafka 클러스터와 동일한 Kubernetes 클러스터 내에서 실행되는 클라이언트에 대해 이 작업을 수행하는 것은 실제로 매우 간단합니다. 각 포드에는 다른 애플리케이션이 직접 연결하는 데 사용할 수 있는 고유한 IP 주소가 있습니다. 이것은 일반적으로 일반 Kubernetes 애플리케이션에서 사용되지 않습니다. 그 이유 중 하나는 Kubernetes가 이러한 IP 주소를 검색하는 좋은 방법을 제공하지 않기 때문입니다. IP 주소를 찾으려면 Kubernetes API를 사용하고 올바른 포드와 해당 IP 주소를 찾아야 합니다. 그리고 이에 대한 권리가 있어야 합니다. 대신 Kubernetes는 안정적인 DNS 이름이 있는 서비스를 기본 검색 메커니즘으로 사용합니다. 그러나 Kafka에서는 자체 검색 프로토콜이 있으므로 문제가 되지 않습니다. 클라이언트가 Kubernetes API에서 API 주소를 알아낼 필요가 없습니다.*metadata* .
+Kafka 클러스터와 동일한 Kubernetes 클러스터 내에서 실행되는 클라이언트에 대해 이 작업을 수행하는 것은 실제로 매우 간단합니다. 각 포드에는 다른 애플리케이션이 직접 연결하는 데 사용할 수 있는 고유한 IP 주소가 있습니다. 이것은 일반적으로 일반 Kubernetes 애플리케이션에서 사용되지 않습니다. 그 이유 중 하나는 Kubernetes가 이러한 IP 주소를 검색하는 좋은 방법을 제공하지 않기 때문입니다. IP 주소를 찾으려면 Kubernetes API를 사용하고 올바른 포드와 해당 IP 주소를 찾아야 합니다. 그리고 이에 대한 권리가 있어야 합니다. 대신 Kubernetes는 안정적인 DNS 이름이 있는 서비스를 기본 검색 메커니즘으로 사용합니다. 그러나 Kafka에서는 자체 discovery protocol 이 있으므로 문제가 되지 않습니다. 클라이언트가 Kubernetes API에서 API 주소를 알아낼 필요가 없습니다.
 
 그러나 Strimzi에서 사용하는 더 나은 옵션이 하나 더 있습니다. Strimzi가 Kafka 브로커를 실행하는 데 사용하는 StatefulSet의 경우 Kubernetes 헤드리스 서비스를 사용하여 각 포드에 안정적인 DNS 이름을 지정할 수 있습니다. Strimzi는 이러한 DNS 이름을 Kafka 브로커에 대해 광고된 주소로 사용하고 있습니다. 
 
-- 초기 연결은 *메타데이터* 를 가져오기 위해 일반 Kubernetes 서비스를 사용하여 수행됩니다 .
-- 후속 연결은 다른 헤드리스 Kubernetes 서비스에서 팟(Pod)에 제공한 DNS 이름을 사용하여 열립니다. 
+- 초기 연결은 *메타데이터* 를 가져오기 위해 일반 Kubernetes service 를 사용하여 수행됩니다 .
+- 후속 연결은 다른 headless Kubernetes service 에서 Pod에 제공한 DNS 이름을 사용하여 열립니다. 
 
 
 
@@ -625,7 +625,7 @@ $ kubectl -n kafka exec -it deploy/kafkacat -- bash
 
 export BROKERS=my-cluster-kafka-bootstrap:9092
 export KAFKAUSER=my-user
-export PASSWORD=KV9tDU0AY4Wu
+export PASSWORD=pprOnk80CDfo
 export TOPIC=my-topic
  
 ## topic 리스트
@@ -1076,6 +1076,64 @@ my-cluster-kafka-2           <none>   broker-2.kafka.ktcloud.211.254.212.105.nip
 my-cluster-kafka-bootstrap   <none>   bootstrap.kafka.ktcloud.211.254.212.105.nip.io   172.27.0.168,172.27.0.29,172.27.0.48,172.27.0.68,172.27.0.76,172.27.1.2   80, 443   13m
 
 
+$ kkf get ingress my-cluster-kafka-bootstrap -o yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    ingress.kubernetes.io/ssl-passthrough: "true"
+    kubernetes.io/ingress.class: traefik
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    traefik.ingress.kubernetes.io/backend-protocol: HTTPS
+    traefik.ingress.kubernetes.io/ssl-passthrough: "true"
+  creationTimestamp: "2022-06-25T12:49:27Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/instance: my-cluster
+    app.kubernetes.io/managed-by: strimzi-cluster-operator
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: strimzi-my-cluster
+    strimzi.io/cluster: my-cluster
+    strimzi.io/kind: Kafka
+    strimzi.io/name: my-cluster-kafka
+  name: my-cluster-kafka-bootstrap
+  namespace: kafka
+  ownerReferences:
+  - apiVersion: kafka.strimzi.io/v1beta2
+    blockOwnerDeletion: false
+    controller: false
+    kind: Kafka
+    name: my-cluster
+    uid: ccd2f8af-cf45-47ae-93f7-54f4b3f356af
+  resourceVersion: "2246186"
+  uid: e73de52b-aabb-4ca5-8c4e-c1247f041cdc
+spec:
+  rules:
+  - host: bootstrap.kafka.ktcloud.211.254.212.105.nip.io
+    http:
+      paths:
+      - backend:
+          service:
+            name: my-cluster-kafka-external-bootstrap
+            port:
+              number: 9094
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - bootstrap.kafka.ktcloud.211.254.212.105.nip.io
+status:
+  loadBalancer:
+    ingress:
+    - ip: 172.27.0.168
+    - ip: 172.27.0.29
+    - ip: 172.27.0.48
+    - ip: 172.27.0.68
+    - ip: 172.27.0.76
+    - ip: 172.27.1.2
+
+
 ```
 
 
@@ -1477,9 +1535,7 @@ https://bootstrap.kafka.apps.211-34-231-82.nip.io
 
 ### (4) 인증서 획득
 
-client 에서 사용할 인증서 획득
-
-이 인증서는 1년짜리 인증서
+client 에서 사용할 인증서 획득 (인증서 기간은 1년)
 
 ```sh
 ## openshift 에서 인증서 획득
@@ -1761,6 +1817,8 @@ kafkacat -b $BROKERS \
 
 # 8. python 실습
 
+아래 설명은 nodeport 기준이다.
+
 
 
 ## 1) 준비
@@ -1775,7 +1833,7 @@ kafkacat -b $BROKERS \
 $ kubectl -n kafka create deploy python --image=python:3.9 -- sleep 365d
 
 # python 실행
-$ kubectl -n kafka exec -it deploy python -- bash
+$ kubectl -n kafka exec -it deploy/python -- bash
 
 
 ```
@@ -1808,12 +1866,27 @@ pip install kafka-python
 ### (3) kafka host 확인
 
 ```sh
-## 참고
-host: bootstrap.kafka.apps.211-34-231-82.nip.io
-host: broker-0.kafka.apps.211-34-231-82.nip.io
-host: broker-1.kafka.apps.211-34-231-82.nip.io
-host: broker-2.kafka.apps.211-34-231-82.nip.io
+
+## external 접근을 위한 host (nodeport 기준)
+bootstrap: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100
+broker0: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32000
+broker1: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32001
+broker2: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32002
+
+## internal 접근을 위한 host
+bootstrap: my-cluster-kafka-bootstrap.kafka.svc:9092
+broker0: my-cluster-kafka-0.my-cluster-kafka-brokers.kafka.svc:9092
+broker2: my-cluster-kafka-2.my-cluster-kafka-brokers.kafka.svc:9092
+broker1: my-cluster-kafka-1.my-cluster-kafka-brokers.kafka.svc:9092 
+
+
+## 인증값
+export KAFKAUSER=my-user
+export PASSWORD=pprOnk80CDfo
+export TOPIC=my-topic
 ```
+
+
 
 
 
@@ -1823,19 +1896,29 @@ host: broker-2.kafka.apps.211-34-231-82.nip.io
 
 
 
+
+
 ### (1) Internal Access
+
+internal 에서 접근시에는 인증서가 없는  9092 port 접근이므로 사용되는 protocol은 SASL_PLAINTEXT 이다.
 
 ```python
 from kafka import KafkaProducer
 
-producer = KafkaProducer(bootstrap_servers='bootstrap.kafka.apps.211-34-231-82.nip.io:443',
+
+
+
+
+
+producer = KafkaProducer(bootstrap_servers='my-cluster-kafka-bootstrap.kafka.svc:9092',
                         security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
                         sasl_plain_username='my-user',
-                        sasl_plain_password='KV9tDU0AY4Wu')
+                        sasl_plain_password='pprOnk80CDfo')
     
-producer.send('order-intl-board-create', b'python test2')
-producer.send('order-intl-board-create', b'python test3')
+producer.send('my-topic', b'python test2')
+producer.send('my-topic', b'python test3')
+
 ```
 
 
@@ -1877,7 +1960,7 @@ producer = KafkaProducer(bootstrap_servers='bootstrap.kafka.apps.211-34-231-82.n
                         ssl_cafile='./ca.crt',
                         ssl_check_hostname=True,
                         sasl_plain_username='my-user',
-                        sasl_plain_password='KV9tDU0AY4Wu')
+                        sasl_plain_password='pprOnk80CDfo')
                         
 producer.send('my-topic', b'python test2')
 producer.send('my-topic', b'python test3')
@@ -1916,11 +1999,12 @@ for i in range(300000, 600000):
 
 ```python
 from kafka import KafkaConsumer
-consumer = KafkaConsumer(bootstrap_servers='sa-cluster-kafka-bootstrap.kafka-system.svc:9092',
+
+consumer = KafkaConsumer(bootstrap_servers='my-cluster-kafka-bootstrap.kafka.svc:9092',
                         security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
                         sasl_plain_username='my-user',
-                        sasl_plain_password='KV9tDU0AY4Wu',
+                        sasl_plain_password='pprOnk80CDfo',
                         auto_offset_reset='earliest',
                         enable_auto_commit= True,
                         group_id='my-topic-group')
@@ -1930,8 +2014,9 @@ consumer.topics()
 # {'my-topic', 'my-topic3'}
 
 # 사용할 topic 지정(구독)
-consumer.subscribe("order-intl-board-create")
-consumer.subscription()    ## {'my-topic'}
+consumer.subscribe("my-topic")
+consumer.subscription()
+## {'my-topic'}
 
 # 메세지 읽기
 for message in consumer:
@@ -1961,7 +2046,7 @@ consumer = KafkaConsumer(bootstrap_servers='bootstrap.kafka.apps.211-34-231-82.n
                         security_protocol="SASL_SSL",
                         sasl_mechanism='SCRAM-SHA-512',
                         sasl_plain_username='my-user',
-                        sasl_plain_password='KV9tDU0AY4Wu',
+                        sasl_plain_password='pprOnk80CDfo',
                         ssl_check_hostname=True,
                         ssl_cafile='./ca.crt',
                         auto_offset_reset='earliest',
@@ -2447,6 +2532,8 @@ python kafkaAdminClient.py
 ### (1) my-cluter 에 exporter 생성
 
 ```sh
+$ kubectl -n kafka edit kafka my-cluster
+---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
@@ -2463,31 +2550,92 @@ spec:
     groupRegex: .*
     topicRegex: .*
   ...    
-    
+---
+
+
 ```
-
-- 
-
 
 
 
 - exporter pod 생성 여부 확인
 
-```
+```sh
+# 확인
 $ kubectl -n kafka get pod
-NAME                                          READY   STATUS    RESTARTS   AGE
+NAME                                          READY   STATUS              RESTARTS      AGE
 ...
-my-cluster-kafka-exporter-5c794977d-llkdh   1/1     Running   0          36s
+my-cluster-kafka-exporter-79b8c986f8-wg259    0/1     ContainerCreating   0             0s
 ...
 
+
+## my-cluster-kafka-exporter 가 추가된다.
+
+
 ```
+
+
+
+
+
+### (2) exporter service 생성
+
+exporter service 는 자동으로 생성되지 않는다.
+
+아래와 같이 수동으로 추가해야 한다.
+
+```sh
+
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/monitoring/11.my-cluster-kafka-exporter-service.yaml
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-cluster-kafka-exporter
+  namespace: kafka
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 9404
+  selector:    
+    app.kubernetes.io/instance: my-cluster
+    app.kubernetes.io/managed-by: strimzi-cluster-operator
+    app.kubernetes.io/name: kafka-exporter    
+  type: ClusterIP
+
+
+
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/11.my-cluster-kafka-exporter-service.yaml
+
+
+```
+
+
+
+- 확인
+
+```
+kkf get svc
+NAME                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE
+...
+my-cluster-kafka-exporter             ClusterIP   10.43.246.16    <none>        80/TCP                                4s
+...
+```
+
+
 
 
 
 - exporter pod 에서 metric 정상 수집 여부 확인
 
-```
-sh-4.4$ curl localhost:9404/metrics
+```sh
+$ kkf exec -it my-cluster-kafka-exporter-79b8c986f8-wg259 -- bash
+
+
+$ curl localhost:9404/metrics
 # HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
 # TYPE go_gc_duration_seconds summary
 go_gc_duration_seconds{quantile="0"} 0.00037912
@@ -2505,9 +2653,8 @@ go_goroutines 19
 go_info{version="go1.17.1"} 1
 
 
-
-
-$ curl my-cluster-kafka-exporter.kafka-system.svc:9404/metrics
+$ curl my-cluster-kafka-exporter.kafka.svc/metrics
+<-- ok
 ```
 
 
@@ -2520,7 +2667,7 @@ $ curl my-cluster-kafka-exporter.kafka-system.svc:9404/metrics
 
 ### (1) 권한부여
 
-- anyuid
+- openshift 에서 수행시 anyuid 권한이 필요하다.
 
 ```
 # 권한부여시
@@ -2536,17 +2683,17 @@ oc adm policy remove-scc-from-user anyuid  -z prometheus-server -n kafka
 ### (2) helm deploy
 
 ```sh
-$ helm3 repo add prometheus-community https://prometheus-community.github.io/helm-charts
+$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 
-$ helm3 fetch prometheus-community/prometheus
+$ helm fetch prometheus-community/prometheus
 
 $ tar -zxvf prometheus-15.10.1.tgz
 
 
 
-$ helm3 -n kafka list
+$ helm -n kafka list
 
-$ helm3 -n kafka install prometheus prometheus-community/prometheus \
+$ helm -n kafka install prometheus prometheus-community/prometheus \
   --set alertmanager.enabled=false \
   --set configmapReload.prometheus.enabled=false \
   --set configmapReload.alertmanager.enabled=false \
@@ -2589,32 +2736,37 @@ prometheus-server                     ClusterIP   172.30.246.251   <none>       
 
 
 
+### (4) ingress
 
+````sh
 
-### (4) exporter service 생성
+$ cd ~/githubrepo/ktds-edu2
 
-exporter service 는 자동으로 생성되지 않는다.
-
-아래와 같이 수동으로 추가해야 한다.
-
-```
-kind: Service
-apiVersion: v1
+$ cat ./kafka/strimzi/monitoring/21.prometheus-ingress.yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: my-cluster-kafka-exporter
-  namespace: kafka
+  name: prometheus-ingress
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
 spec:
-  ports:
-    - name: http
-      protocol: TCP
-      port: 80
-      targetPort: 9404
-  selector:    
-    app.kubernetes.io/instance: my-cluster
-    app.kubernetes.io/managed-by: strimzi-cluster-operator
-    app.kubernetes.io/name: kafka-exporter    
-  type: ClusterIP
-```
+  rules:
+  - host: "prometheus.kafka.ktcloud.211.254.212.105.nip.io"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus-server
+            port:
+              number: 80
+
+
+
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/21.prometheus-ingress.yaml
+````
 
 
 
@@ -2622,7 +2774,14 @@ spec:
 
 ### (5) route
 
-````
+openshift 환경일때는 route 를 생성한다.
+
+````sh
+
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/monitoring/22.prometheus-route.yaml
+---
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
@@ -2643,6 +2802,8 @@ spec:
     weight: 100
   port:
     targetPort: http
+    
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/22.prometheus-route.yaml
 ````
 
 
@@ -2655,27 +2816,17 @@ spec:
 
 exporter 주소를 추가해야 한다.
 
-````
+````sh
+$ kubectl -n kafka edit prometheus-server
+---
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  annotations:
-    meta.helm.sh/release-name: prometheus
-    meta.helm.sh/release-namespace: kafka-system
   name: prometheus-server
-  namespace: kafka-system
-  labels:
-    app: prometheus
-    app.kubernetes.io/managed-by: Helm
-    chart: prometheus-15.8.4
-    component: server
-    heritage: Helm
-    release: prometheus
+  namespace: kafka
+  ...
 data:
-  alerting_rules.yml: |
-    {}
-  alerts: |
-    {}
+  ...
   prometheus.yml: |
     global:
       evaluation_interval: 1m
@@ -2687,6 +2838,8 @@ data:
     - /etc/config/rules
     - /etc/config/alerts
     scrape_configs: 
+    
+    ## 아래 부분 추가
     - job_name: kafka-exporter
       metrics_path: /metrics
       scrape_interval: 1m
@@ -2701,14 +2854,16 @@ data:
 
 
 
-
-
 ## 3) Grafana deploy
 
-```yaml
- # This is not a recommended configuration, and further support should be available
-# from the Prometheus and Grafana communities.
+- deploy
 
+```sh
+
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -2755,6 +2910,20 @@ spec:
         emptyDir: {}
       - name: grafana-logs
         emptyDir: {}
+        
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
+```
+
+
+
+
+- service
+
+```sh
+
+$ cd ~/githubrepo/ktds-edu2
+
+$ cat ./kafka/strimzi/monitoring/32.grafana-svc.yaml
 ---
 apiVersion: v1
 kind: Service
@@ -2773,15 +2942,51 @@ spec:
     name: grafana
   type: ClusterIP
 
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/32.grafana-svc.yaml
 ```
 
 
 
 
 
+- ingress
+
+```sh
+
+$ cat ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+spec:
+  rules:
+  - host: "grafana.kafka.ktcloud.211.254.212.105.nip.io"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 80
+
+
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/33.grafana-ingress.yaml
+```
+
+
+
 - route
+  - openshift 환경에서만 사용
+
 
 ```yaml
+$ cat ./kafka/strimzi/monitoring/34.grafana-route.yaml
+---
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
@@ -2798,6 +3003,7 @@ spec:
   port:
     targetPort: grafana
   wildcardPolicy: None
+$ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/34.grafana-route.yaml
 ```
 
 
