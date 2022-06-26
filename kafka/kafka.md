@@ -451,7 +451,8 @@ $ kubectl -n kafka apply -f ./kafka/strimzi/topic/11.kafka-topic.yaml
 
 $ kubectl -n kafka get kafkatopic my-topic
 NAME       CLUSTER      PARTITIONS   REPLICATION FACTOR   READY
-my-topic   my-cluster   3            1                    True
+my-topic   my-cluster   3            3                    True
+
 ```
 
 - partitions 1이면 producer 수행시 아래 메세지 발생할 수 있음.
@@ -461,32 +462,35 @@ my-topic   my-cluster   3            1                    True
 
 ```sh
 $ kubectl -n kafka get kafkatopic my-topic -o yaml
+apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
 metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"kafka.strimzi.io/v1beta2","kind":"KafkaTopic","metadata":{"annotations":{},"labels":{"strimzi.io/cluster":"my-cluster"},"name":"my-topic","namespace":"kafka"},"spec":{"config":{"retention.ms":86400000,"segment.bytes":1073741824},"partitions":3,"replicas":1}}
-  creationTimestamp: "2022-06-25T08:57:06Z"
-  generation: 1
+      {"apiVersion":"kafka.strimzi.io/v1beta2","kind":"KafkaTopic","metadata":{"annotations":{},"labels":{"strimzi.io/cluster":"my-cluster"},"name":"my-topic","namespace":"kafka"},"spec":{"config":{"retention.ms":86400000,"segment.bytes":1073741824},"partitions":3,"replicas":3}}
+  creationTimestamp: "2022-06-26T04:07:31Z"
+  generation: 3
   labels:
     strimzi.io/cluster: my-cluster
   name: my-topic
   namespace: kafka
-  resourceVersion: "2010142"
-  uid: 90e7e661-d4b9-437a-b13b-95bef76a1970
+  resourceVersion: "2256885"
+  uid: 07a78a24-b028-4bd6-8f06-2848be93e1dc
 spec:
   config:
     retention.ms: 86400000
     segment.bytes: 1073741824
   partitions: 3
-  replicas: 1
+  replicas: 3
+  topicName: my-topic
 status:
   conditions:
-  - lastTransitionTime: "2022-06-25T08:57:06.837209Z"
+  - lastTransitionTime: "2022-06-26T04:08:55.432530Z"
     status: "True"
     type: Ready
-  observedGeneration: 1
+  observedGeneration: 3
   topicName: my-topic
+
 
 ```
 
@@ -1867,11 +1871,6 @@ pip install kafka-python
 
 ```sh
 
-## external 접근을 위한 host (nodeport 기준)
-bootstrap: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100
-broker0: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32000
-broker1: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32001
-broker2: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32002
 
 ## internal 접근을 위한 host
 bootstrap: my-cluster-kafka-bootstrap.kafka.svc:9092
@@ -1879,6 +1878,11 @@ broker0: my-cluster-kafka-0.my-cluster-kafka-brokers.kafka.svc:9092
 broker2: my-cluster-kafka-2.my-cluster-kafka-brokers.kafka.svc:9092
 broker1: my-cluster-kafka-1.my-cluster-kafka-brokers.kafka.svc:9092 
 
+## external 접근을 위한 host (nodeport 기준)
+bootstrap: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100
+broker0: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32000
+broker1: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32001
+broker2: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32002
 
 ## 인증값
 export KAFKAUSER=my-user
@@ -1934,25 +1938,20 @@ for i in range(300000, 600000):
     producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
 
 
-
 ```
-
-- 4000 TPS 까지 테스트 완료함
-- 7000 TPS 까지 테스트 완료함
-
-
 
 
 
 ### (2) External Access
 
+Nodeport 설정에는 인증서가 불필요한 SASL_PLAINTEXT 이다.
+
 ```python
 from kafka import KafkaProducer
 
-producer = KafkaProducer(bootstrap_servers='bootstrap.kafka.apps.211-34-231-82.nip.io:443',
-                        security_protocol="SASL_SSL",
+producer = KafkaProducer(bootstrap_servers='my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100',
+                        security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
-                        ssl_cafile='./ca.crt',
                         ssl_check_hostname=True,
                         sasl_plain_username='my-user',
                         sasl_plain_password='pprOnk80CDfo')
@@ -1981,8 +1980,13 @@ for i in range(300000, 600000):
     
 ```
 
-- 4000 TPS 까지 테스트 완료함
-- 7000 TPS 까지 테스트 완료함
+- tps 비교
+  - internal : 1.5k TPS
+  - external : 1.7k TPS
+
+- 결론
+  - 당연한 내용이지만 internal 이  external 보다 조금 더 정도 빠름
+
 
 
 
@@ -2037,13 +2041,12 @@ topic=my-topic partition=0 offset=40: key=None value=b'{"eventName":"a","num":96
 ```python
 from kafka import KafkaConsumer
 
-consumer = KafkaConsumer(bootstrap_servers='bootstrap.kafka.apps.211-34-231-82.nip.io:443',
-                        security_protocol="SASL_SSL",
+consumer = KafkaConsumer(bootstrap_servers='my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100',
+                        security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
                         sasl_plain_username='my-user',
                         sasl_plain_password='pprOnk80CDfo',
                         ssl_check_hostname=True,
-                        ssl_cafile='./ca.crt',
                         auto_offset_reset='earliest',
                         enable_auto_commit= True,
                         group_id='my-topic-group')
@@ -2839,7 +2842,7 @@ data:
     ## 아래 부분 추가
     - job_name: kafka-exporter
       metrics_path: /metrics
-      scrape_interval: 1m
+      scrape_interval: 10s
       scrape_timeout: 10s
       static_configs:
       - targets:
