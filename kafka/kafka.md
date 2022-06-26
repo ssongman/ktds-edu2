@@ -439,7 +439,7 @@ metadata:
   namespace: kafka
 spec:
   partitions: 3
-  replicas: 1
+  replicas: 3
   config:
     #retention.ms: 7200000      # 2 hour
     retention.ms: 86400000      # 24 hours
@@ -1905,11 +1905,6 @@ internal 에서 접근시에는 인증서가 없는  9092 port 접근이므로 �
 ```python
 from kafka import KafkaProducer
 
-
-
-
-
-
 producer = KafkaProducer(bootstrap_servers='my-cluster-kafka-bootstrap.kafka.svc:9092',
                         security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
@@ -1927,16 +1922,16 @@ producer.send('my-topic', b'python test3')
 
 ```python
 # 20만건 테스트
-for i in range(300000):
+for i in range(100000):
     print(i)
-    producer.send('order-intl-board-create', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
+    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
 
 
 
 # 20만건 테스트
 for i in range(300000, 600000):
     print(i)
-    producer.send('order-intl-board-create', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
+    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
 
 
 
@@ -2016,7 +2011,7 @@ consumer.topics()
 # 사용할 topic 지정(구독)
 consumer.subscribe("my-topic")
 consumer.subscription()
-## {'my-topic'}
+
 
 # 메세지 읽기
 for message in consumer:
@@ -3056,19 +3051,36 @@ $ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/34.grafana-route.yaml
 
 ## 4) Grafana Monitoring
 
-### Grafana 모니터링 URL
+### (1) Grafana 접속
 
 http://grafana-kafka.apps.211-34-231-82.nip.io
 
 
 
-### 메뉴위치
-
-Dashboards > Manage > Strimzi Kafka Exporter
-
-### Grafana 화면
 
 
+
+
+### (2) promehteus 연동
+
+- 메뉴 : Data Sources / Promehteus 
+- URL : prometheus-server  입력
+
+
+
+### (3) strimzi exporter dashboard import
+
+- 메뉴: Dashboards / Manage
+- import : 11285입력
+- 참고링크 
+
+https://grafana.com/grafana/dashboards/11285-strimzi-kafka-exporter
+
+
+
+### (4) 확인
+
+- 메뉴 위치 : Dashboards > Manage > Strimzi Kafka Exporter
 
 ![image-20220626111254872](kafka.assets/image-20220626111254872.png)
 
