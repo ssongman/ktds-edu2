@@ -2441,7 +2441,7 @@ $ docker exec -it python -- bash
 
 ```
 
-### 
+
 
 ### (2) python library install
 
@@ -2456,7 +2456,6 @@ pip install kafka-python
 ### (3) kafka host 확인
 
 ```sh
-
 
 ## internal 접근을 위한 host
 bootstrap: my-cluster-kafka-bootstrap.kafka.svc:9092
@@ -2553,7 +2552,7 @@ producer.send('my-topic', b'python test3')
 ```python
 
 # 대량 테스트
-for i in range(100000):
+for i in range(100):
     print(i)
     producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
 
@@ -2841,244 +2840,323 @@ python kafkaAdminClient.py
 
 
 
-# 9. Java Native Connect
+# 9.  [실습] Java Sample
 
 
 
-### 1) application.yml
+
+
+
+
+ 
+
+## 1) 개인당 Kafka Cluster 접속 권한 정보
+
+ 
+
+Topic/Group/User 정보 대해서 아래와 같이 준비되어 있다.
 
 ```
+# topic
+edu-topic-01 ~ edu-topic-20
+ 
+# group - 사용자가 consum 할때 선언함
+edu-group-01 ~ edu-group-20
+ 
+# user 는 공용
+my-user
+```
+
+ 
+
+### (1) 접속권한
+
+교육을 위해 한시적으로 접속권한 생성함
+
+| **User** | **Pass**     | **비고**                          |
+| -------- | ------------ | --------------------------------- |
+| my-user  | pprOnk80CDfo | 2022년 7월에만  유지되고 삭제예정 |
+
+ 
+
+### (2) 개인당 Topic 할당
+
+| **Topic**       | **Group**       | **담당자** | **비고** |
+| --------------- | --------------- | ---------- | -------- |
+| sa-edu-topic-01 | sa-edu-group-01 | 송양종     |          |
+| sa-edu-topic-02 | sa-edu-group-02 | 김성태     |          |
+| sa-edu-topic-03 | sa-edu-group-03 | 김자영     |          |
+| sa-edu-topic-04 | sa-edu-group-04 | 박용진     |          |
+| sa-edu-topic-05 | sa-edu-group-05 | 김유석     |          |
+| sa-edu-topic-06 | sa-edu-group-06 | 서정민     |          |
+| sa-edu-topic-07 | sa-edu-group-07 | 허세환     |          |
+| sa-edu-topic-08 | sa-edu-group-08 | 김중완     |          |
+| sa-edu-topic-09 | sa-edu-group-09 | 김도영     |          |
+| sa-edu-topic-10 | sa-edu-group-10 | 성상철     |          |
+| sa-edu-topic-11 | sa-edu-group-11 | 이종환     |          |
+| sa-edu-topic-12 | sa-edu-group-12 | 김동하     |          |
+| sa-edu-topic-13 | sa-edu-group-13 | 한종호     |          |
+| sa-edu-topic-14 | sa-edu-group-14 | 이시우     |          |
+| sa-edu-topic-15 | sa-edu-group-15 | 류화동     |          |
+| sa-edu-topic-16 | sa-edu-group-16 | 최인선     |          |
+| sa-edu-topic-17 | sa-edu-group-17 | 김남규     |          |
+| sa-edu-topic-18 | sa-edu-group-18 | 주미선     |          |
+| sa-edu-topic-19 | sa-edu-group-19 | 김태룡     |          |
+| sa-edu-topic-20 | sa-edu-group-20 | 박상혁     |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+|                 |                 |            |          |
+
+
+
+
+
+
+
+## 2) kafka-consumer
+
+
+
+### (1) sample import
+
+
+
+- Gitlab 의 kafka-consumer repo 주소 확인
+  - https://gitlab.dspace.kt.co.kr/sa-guide/sample-projects/kafka-consumer.git
+
+
+
+- STS 에서 import 
+
+```
+Package Explorer 에서 우클릭 이후 아래 메뉴 선택
+1) import - git - Project from Git(with smart import)
+
+2) Clone 선택
+
+3) URI 에 위 주소 붙여넣기
+
+4) edu branch 만 선택(master 는 선택 해지)   <-- 중요 ★
+# 실습환경에 맞도록 edu branch 를 수정해 놓았음. 그러므로 edu 만 선택해서 받는다.
+
+5) local Destination 에서 프로젝트 위치 지정
+
+6) Maven 확인 후 finish
+
+```
+
+
+
+
+
+### (2) 소스내 Topic/Group 수정
+
+- application-local.yaml 에서 아래 내용 수정
+
+```yaml
+spring:
   cloud:
     stream:
-      kafka:
-        binder:
-          # applicationId: my-user
-          brokers:
-          - sa-cluster-kafka-route-0-kafka.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr:443,sa-cluster-kafka-route-1-kafka.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr:443,sa-cluster-kafka-route-2-kafka.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr:443
-            sa-cluster-kafka-route-bootstrap-kafka-system.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr
-          configuration:
-            security:
-              protocol: SASL_SSL
-            sasl:
-              mechanism: SCRAM-SHA-512
-              jaas:
-                config: org.apache.kafka.common.security.scram.ScramLoginModule required username="my-user" password="StzbQLCa1XHH";
-           
-            ssl:
-              truststore.location: classpath:/truststore.jks
-              truststore.type: JKS
-              truststore.password: new1234
-              
-          - sa-cluster-kafka-route-0-kafka.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr:443,sa-cluster-
-          
-          
-          
+      function:
+        definition: boardCreate
+      ...
+      bindings:
+        boardCreate-in-0:
+          destination: sa-edu-topic-01     # 본인의 토픽명으로 수정할것
+          group: sa-edu-group-01           # 본인의 그룹명으로 수정할것
 ```
 
+ 
 
+### (3) Consumer 실행
 
 ```
-
-          brokers:
-          - 
-          sa-cluster-kafka-route-0-kafka.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr:443,
-          sa-cluster-kafka-route-1-kafka.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr:443,
-          sa-cluster-kafka-route-2-kafka-system.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr:443
-          sa-cluster-kafka-route-bootstrap-kafka-system.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr
-          configuration:
-          
-          
-          
+Run As - Spring Boot App 실행
 ```
 
 
 
 
 
+## 3) kafka-producer
 
+ 
 
-## 9.1 producer
+### 1) sample import
 
-```java
-	public static Properties setProperty() {
-		String bootstrapServer = "sa-cluster-kafka-bootstrap.kafka-system.svc:9092";
-		String username = "order-user";
-		String password = "XVDMDpGgaTTu";
+- Gitlab 의 kafka-producer repo 주소 확인
 
-		Properties props = new Properties();
-        props.put("bootstrap.servers", bootstrapServer);
-        props.put("security.protocol", "SASL_PLAINTEXT");
-        props.put("sasl.mechanism", "SCRAM-SHA-512");
-        
-        String jaasTemplate = "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";";
-        String jaasCfg = String.format(jaasTemplate, username, password);
-        props.put("sasl.jaas.config", jaasCfg);
-		
-        return props;
-	}
-	
-	public static void Producer() {
-		String topicName = "order-my-topic1";
+```
+https://gitlab.dspace.kt.co.kr/sa-guide/sample-projects/kafka-producer.git
+```
 
-        // property
-		Properties props = setProperty();
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+복사하여 클립보드에 기억한다.
 
-        // producer create
-        KafkaProducer<String, String> producer = new KafkaProducer<String, String>(props);
-        TestCallback callback = new TestCallback();
+- STS 에서 import
+  - Package Explorer 에서 우클릭 이후 아래 메뉴 선택
 
-        // Message send     
-        for (int i = 0; i < 5; i++) {
-            producer.send(new ProducerRecord<String, String>(topicName, "my-key", "hello Arsenal ES - " + i), callback);
-        }
+```
+1) import - git - Project from Git(with smart import)
 
-        // producer Close
-        producer.flush();
-        producer.close();
-	}
-	
-	private static class TestCallback implements Callback {
-       @Override
-       public void onCompletion(RecordMetadata recordMetadata, Exception e) {
-           if (e != null) {
-               System.out.println("Error while producing message to topic :" + recordMetadata);
-               e.printStackTrace();
-           } else {
-               String message = String.format("sent message to topic:%s partition:%s  offset:%s", recordMetadata.topic(), recordMetadata.partition(), recordMetadata.offset());
-               System.out.println(message);
-           }
-       }
-	}
+2) Clone 선택
+
+3) URI 에 위 주소 붙여넣기
+
+4) edu branch 만 선택(master 는 선택 해지)   <-- 중요 ★
+실습환경에 맞도록 edu branch 를 수정해 놓았음. 그러므로 edu 만 선택해서 받는다.
+
+5) local Destination 에서 프로젝트 위치 지정
+
+6) Maven  확인 후 finish
 ```
 
 
 
-## 9.2 consumer
+### 2) 소스내 Topic 수정
 
-```java
-	public static Properties setProperty() {
-		String bootstrapServer = "sa-cluster-kafka-bootstrap.kafka-system.svc:9092";
-		String username = "order-user";
-		String password = "XVDMDpGgaTTu";
+application-local.yaml 에서 아래 내용 수정
 
-		Properties props = new Properties();
-        props.put("bootstrap.servers", bootstrapServer);
-        props.put("security.protocol", "SASL_PLAINTEXT");
-        props.put("sasl.mechanism", "SCRAM-SHA-512");
-        
-        String jaasTemplate = "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";";
-        String jaasCfg = String.format(jaasTemplate, username, password);
-        props.put("sasl.jaas.config", jaasCfg);
-		
-        return props;
-	}
-	
-	public static void Consumer() {
-		String topicName = "order-my-topic1";
-		
-        // property
-		Properties props = setProperty();
-        props.put("group.id", "order-consumer-group");
-        props.put("enable.auto.commit", "true");
-        props.put("auto.offset.reset", "latest");
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+```yaml
+spring: 
+  cloud:
+    stream:
+      bindings:
+        boardCreate-out-0:
+          destination: sa-edu-topic-01   # 본인의 토픽명으로 수정할것
+```
 
-        // Consumer create
-		try {
-			KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(props);
-			consumer.subscribe(Arrays.asList(topicName));
-			while (true) {
-				ConsumerRecords<String, String> records = consumer.poll(1000);
-			    for (ConsumerRecord<String, String> record : records) {
-			        System.out.printf("%s [%d] offset=%d, key=%s, value=\"%s\"\n",
-									  record.topic(), record.partition(),
-									  record.offset(), record.key(), record.value());
-				}
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+ 
+
+### 3) producer 실행
+
+```
+Run As - Spring Boot App 실행
+```
+
+ 
+
+### 4) pub test (create api call)
+
+postman 이나 curl 을 통해서 아래와 같이 테스트를 수행한다.
+
+```
+curl -X POST http://localhost:8081/create \
+  -H "Content-Type: application/json" \
+  -d '{  
+  "eventName": "boardCreate",
+  "num": 2,
+  "title": "test insert-1",
+  "contents": "test insert-1",
+  "writeId": "user1",
+  "writeName": "user1",
+  "writeDate": "2021-09-11T16:20:41"
+}'
+ 
+ 
+## while - sleep 1
+while true; do curl -X POST http://localhost:8081/create \
+  -H "Content-Type: application/json" \
+  -d '{  
+  "eventName": "boardCreate",
+  "num": 2,
+  "title": "test insert-1",
+  "contents": "test insert-1",
+  "writeId": "user1",
+  "writeName": "user1",
+  "writeDate": "2021-09-11T16:20:41"
+}'; sleep 1; echo; done
+ 
+ 
 ```
 
 
 
-## 9.3 streams
+ 
 
-```java
-	public static void Pipe() {
-		
-        /*
-         * 카프카 스트림 파이프 프로세스에 필요한 설정값
-         * StreamsConfig의 자세한 설정값은
-         * https://kafka.apache.org/10/documentation/#streamsconfigs 참고
-         */
+# 10. [데모]Consumer Rebalancing Round Test
 
-		String bootstrapServer = "sa-cluster-kafka-bootstrap.kafka-system.svc:9092";
-		String username = "order-user";
-		String password = "XVDMDpGgaTTu";
+ 
 
-		Properties props = new Properties();
-		// 카프카 스트림즈 애플리케이션을 유일할게 구분할 아이디
-		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-pipe");
-		// 스트림즈 애플리케이션이 접근할 카프카 브로커정보
-		props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
-		// 데이터를 어떠한 형식으로 Read/Write할지를 설정(키/값의 데이터 타입을 지정) - 문자열
-		props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-		props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+일반적으로 Consumer group의 멤버 구성에 변화가 생기면 리소스의 재분배가 필요한데 이를 **Rebalancing Round** 라고 한다.
 
-		
-		props.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
-        props.put("sasl.mechanism", "SCRAM-SHA-512");
-        
-        String jaasTemplate = "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";";
-        String jaasCfg = String.format(jaasTemplate, username, password);
-        props.put("sasl.jaas.config", jaasCfg);
-        
-        // consumer
-        props.put("group.id", "order-consumer-group");
-        props.put("enable.auto.commit", "true");
-        props.put("auto.offset.reset", "latest");
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        
+이 RR 이 발생하는 동안은 어떤 컨슈머들도 정상적인 데이터 처리를 하지 못한다는 문제를 가지는데 카프카에서는 이를 **Stop The World** 라는 용어로 부른다. 
 
-		// 데이터의 흐름으로 구성된 토폴로지를 정의할 빌더
-		final StreamsBuilder builder = new StreamsBuilder();
+이는 천 개의 Connect Task 가 그룹에 존재했을 때 그 천 개의 프로세스가 전부 정상 동작하지 못하게 되는 상황을 맞이한다. 
 
-		// input에서 output으로 스트림 데이터 흐름을 정의 한다.
-		// input-topic : order-my-topic1
-		// output-topic : order-my-topic2
-		/*
-		 * KStream<String, String> source = builder.stream("order-my-topic1");
-		 * source.to("order-my-topic2");
-		 */
-		builder.stream("order-my-topic1").to("order-my-topic2");
+또한 이렇게 리벨런싱이 초래한 Stop The World 는 일반적인 하드웨어나 네트워크 손실 문제로 발생한 일시적인 client fail 과 더불어, scale up / down 의 상황이나 계획적인 클라이언트 start / stop / restart 의 상황에서 전부 발생할 수 있다. 
 
-		// 최종적인 토폴로지 생성
-		final Topology topology = builder.build();
-
-		// 만들어진 토폴로지 확인
-        System.out.println("Topology info: " + topology.describe());
-
-		final KafkaStreams streams = new KafkaStreams(topology, props);
-
-		try {
-			streams.start();
-			System.out.println("topology started");
-
-		} catch (Throwable e) {
-			System.exit(1);
-		}
-		System.exit(0);
-
-	}
-```
+그럼 Consumer 갯수에 따른 Partition 매핑 관계와 Consumer Rebalancing 현상에 대해서 확인해 보자.
 
 
 
+## 1) 시나리오1 
 
+- 설명 
+
+o  Partition 3개인 Topic 에서 Consumer 갯수에 따른 변화사항 보기
+
+o  원할한 테스트를 위해서 python console 로 수행 한다.
+
+- Consumer 환경 
+
+- - Consumer1:  python
+  - Consumer2:  python
+  - Consumer3:  python
+
+- 테스트 절차 
+
+- - Consumer 1개로 처리 되는 현상 보기 
+
+  - - 예상되는 결과: 1개의 Consumer 가 3개의 partition 을 모두 처리한다.
+
+  - Consumer 2일때 
+
+  - - 예상되는 결과: 1번 Consumer 가 partition 1개를 , 2번 Consumer 가 partition 2개 를 처리한다.·
+
+- - Consumer  3일때 
+
+  - - 예상된는 결과: Consumer 와 partition 이 1:1 매핑되어 처리된다. 가장 이상적인 구조이다.
+
+ 
+
+## 2) 시나리오2
+
+- 설명 
+
+- - 위 시나리오1번 에서 Consumer 종류를 다양하게 수행한다.
+
+- Consumer 환경     
+
+- - Consumer1:      Spring boot
+  - Consumer2:      python
+  - Consumer3:      python
+
+- 테스트 절차
+
+- - 위와 동일
