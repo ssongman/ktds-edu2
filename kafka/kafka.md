@@ -2903,35 +2903,6 @@ my-user
 | sa-edu-topic-18 | sa-edu-group-18 | 주미선     |          |
 | sa-edu-topic-19 | sa-edu-group-19 | 김태룡     |          |
 | sa-edu-topic-20 | sa-edu-group-20 | 박상혁     |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
-|                 |                 |            |          |
 
 
 
@@ -2947,20 +2918,27 @@ my-user
 
 
 
-- Gitlab 의 kafka-consumer repo 주소 확인
-  - https://gitlab.dspace.kt.co.kr/sa-guide/sample-projects/kafka-consumer.git
+- Github 의 kafka-consumer repo 주소 확인
+
+```
+https://github.com/ssongman/kafka-consumer.git
+```
+
+복사하여 클립보드에 기억한다.
 
 
 
 - STS 에서 import 
+  - Package Explorer 에서 우클릭 이후 아래 메뉴 선택
+
 
 ```
-Package Explorer 에서 우클릭 이후 아래 메뉴 선택
 1) import - git - Project from Git(with smart import)
 
 2) Clone 선택
 
 3) URI 에 위 주소 붙여넣기
+# 클립보드에 기억된 git 주소로 자동 셋팅된다.
 
 4) edu branch 만 선택(master 는 선택 해지)   <-- 중요 ★
 # 실습환경에 맞도록 edu branch 를 수정해 놓았음. 그러므로 edu 만 선택해서 받는다.
@@ -2988,8 +2966,8 @@ spring:
       ...
       bindings:
         boardCreate-in-0:
-          destination: sa-edu-topic-01     # 본인의 토픽명으로 수정할것
-          group: sa-edu-group-01           # 본인의 그룹명으로 수정할것
+          destination: edu-topic-01     # 본인의 토픽명으로 수정할것
+          group: edu-group-01           # 본인의 그룹명으로 수정할것
 ```
 
  
@@ -3010,10 +2988,10 @@ Run As - Spring Boot App 실행
 
 ### 1) sample import
 
-- Gitlab 의 kafka-producer repo 주소 확인
+- Github 의 kafka-producer repo 주소 확인
 
 ```
-https://gitlab.dspace.kt.co.kr/sa-guide/sample-projects/kafka-producer.git
+https://github.com/ssongman/kafka-producer.git
 ```
 
 복사하여 클립보드에 기억한다.
@@ -3027,6 +3005,7 @@ https://gitlab.dspace.kt.co.kr/sa-guide/sample-projects/kafka-producer.git
 2) Clone 선택
 
 3) URI 에 위 주소 붙여넣기
+# 클립보드에 기억된 git 주소로 자동 셋팅된다.
 
 4) edu branch 만 선택(master 는 선택 해지)   <-- 중요 ★
 실습환경에 맞도록 edu branch 를 수정해 놓았음. 그러므로 edu 만 선택해서 받는다.
