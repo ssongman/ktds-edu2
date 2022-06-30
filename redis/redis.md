@@ -83,6 +83,88 @@
 
 
 
+
+
+
+
+# 3. Install 준비
+
+WSL 환경에서 istio 를 설치해 보자.
+
+
+
+## 1) helm install
+
+쿠버네티스에 서비스를 배포하는 방법이 다양하게 존재하는데 그중 대표적인 방법중에 하나가 Helm chart 방식 이다.
+
+
+
+- helm chart 의 필요성
+
+일반적으로 Kubernetes 에 서비스를 배포하기 위해 준비되는 Manifest 파일은 정적인 형태이다. 따라서 데이터를 수정하기 위해선 파일 자체를 수정해야 한다.  잘 관리를 한다면야 큰 어려움은 없겠지만, 문제는 CI/CD 등 자동화된 파이프라인을 구축해서 애플리케이션 라이프사이클을 관리할 때 발생한다.  
+
+보통 애플리케이션 이미지를 새로 빌드하게 되면, 빌드 넘버가 변경된다. 이렇게 되면 새로운 이미지를 사용하기 위해 Kubernetes Manifest의 Image도 변경되어야 한다.  하지만 Kubernetes Manifest를 살펴보면, 이를 변경하기 쉽지 않다. Image Tag가 별도로 존재하지 않고 Image 이름에 붙어있기 때문입니다. 이를 자동화 파이프라인에서 변경하려면, sed 명령어를 쓰는 등의 힘든 작업을 해야 한다.
+
+Image Tag는 굉장히 단적인 예제이다.  이 외에 도 Configmap 등 배포시마다 조금씩 다른 형태의 데이터를 배포해야 할때 Maniifest 파일 방식은 너무나 비효율적이다.  Helm Chart 는 이런 어려운 점을 모두 해결한 훌륭한 도구이다.  비단,  사용자가 개발한 AP 뿐아니라 kubernetes 에 배포되는 오픈소스 기반 솔루션들은 거의 모두 helm chart 를 제공한다.
+
+Istio 도 마찬가지로 helm 배포를 위한 chart 를 제공해 준다.
+
+
+
+### (1) helm architecture
+
+
+
+![helm-architecure](redis.assets/helm-architecure.png)
+
+
+
+### (2) helm client download
+
+helm client 를 local 에 설치해 보자.
+
+```sh
+# root 권한으로 수행
+## 임시 디렉토리를 하나 만들자.
+$ mkdir -p ~/helm/
+$ cd ~/helm/
+
+$ wget https://get.helm.sh/helm-v3.9.0-linux-amd64.tar.gz
+$ tar -zxvf helm-v3.9.0-linux-amd64.tar.gz
+$ mv linux-amd64/helm /usr/local/bin/helm
+
+$ ll /usr/local/bin/helm*
+-rwxr-xr-x 1 song song 46182400 May 19 01:45 /usr/local/bin/helm*
+
+
+# 권한정리
+$ sudo chmod 600  /home/song/.kube/config
+
+
+# 확인
+$ helm version
+version.BuildInfo{Version:"v3.9.0", GitCommit:"7ceeda6c585217a19a1131663d8cd1f7d641b2a7", GitTreeState:"clean", GoVersion:"go1.17.5"}
+
+$ helm -n user01 ls
+NAME    NAMESPACE       REVISION        UPDATED STATUS  CHART   APP VERSION
+
+```
+
+
+
+
+
+## 2) namespace 생성
+
+```sh
+$ kubectl create ns redis-system
+
+$ alias krs='kubectl -n redis-system'
+
+```
+
+
+
 # 2. Redis Cluster Install
 
 kubernetes 기반에서 Redis 를 설치해보자.
@@ -92,8 +174,6 @@ kubernetes 기반에서 Redis 를 설치해보자.
 
 
 ## 1) helm chart download
-
-helm chart 를download 해보자.
 
 
 
@@ -153,14 +233,6 @@ drwxr-xr-x 2 root root  4096 Jun 26 05:37 img/
 drwxr-xr-x 2 root root  4096 Jun 26 05:37 templates/
 -rw-r--r-- 1 root root 39649 Jun 10 16:31 values.yaml
 
-```
-
-
-
-### (4) namespace 생성
-
-```sh
-$ kubectl create ns redis-system
 ```
 
 
@@ -411,9 +483,7 @@ redis-cli -c -h my-release-redis-cluster -a $REDIS_PASSWORD
 
 
 
-## 3) Redis pod/svc 확인
-
-먼저 아래와 같이 동일한 Namespace 에 redis-client 를 실행한다.
+## 3) pod/svc 확인
 
 ```sh
 ## redis cluster 를 구성하고 있는 pod 를 조회
@@ -445,7 +515,7 @@ my-release-redis-cluster-headless   ClusterIP   None          <none>        6379
 
 redis client를 cluster 내부에서 실행후 접근하는 방법을 알아보자.
 
-### (1) Redis-client 실행
+### (1) Redis client 실행
 
 먼저 아래와 같이 동일한 Namespace 에 redis-client 를 실행한다.
 
@@ -603,7 +673,7 @@ helm delete 명령을 이용하면 helm chart 로 설치된 모든 리소스가 
 
 ```sh
 ## 삭제하기
-$ helm3 -n redis-system delete my-release
+$ helm -n redis-system delete my-release
 
 ```
 
@@ -641,12 +711,6 @@ $ helm upgrade <release> \
 
 
 
-
-
-
-
-
-
 # 3. Redis Install
 
 External (Cluster 외부) 에서 access 하기 위해서 node port 를 이용해야 한다.
@@ -669,16 +733,7 @@ External (Cluster 외부) 에서 access 하기 위해서 node port 를 이용해
 
 
 
-### (1)   redis cluster 초기화
-
-```sh
-# redis cluster 초기화
-$ helm -n redis-system delete my-release
-```
-
-
-
-### (2)  Redis Install(Single Master)
+### (1)  Redis Install
 
 
 
@@ -695,6 +750,76 @@ prometheus-community/prometheus-redis-exporter  4.8.0           1.27.0          
 ```
 
 bitnami/redis
+
+
+
+#### helm install
+
+```sh
+$ cd ~/song/helm/charts/redis
+
+# helm install
+# master 1, slave 3 실행
+$ helm -n redis-system install my-release bitnami/redis \
+    --set global.redis.password=new1234 \
+    --set image.registry=docker.io \
+    --set master.persistence.enabled=false \
+    --set master.service.type=NodePort \
+    --set master.service.nodePorts.redis=32200 \
+    --set replica.replicaCount=3 \
+    --set replica.persistence.enabled=false \
+    --set replica.service.type=NodePort \
+    --set replica.service.nodePorts.redis=32210
+
+##
+    my-release-redis-master.redis-system.svc.cluster.local for read/write operations (port 6379)
+    my-release-redis-replicas.redis-system.svc.cluster.local for read-only operations (port 6379)
+
+
+
+To get your password run:
+
+    export REDIS_PASSWORD=$(kubectl get secret --namespace redis-system my-release-redis -o jsonpath="{.data.redis-password}" | base64 -d)
+
+To connect to your Redis&reg; server:
+
+1. Run a Redis&reg; pod that you can use as a client:
+
+   kubectl run --namespace redis-system redis-client --restart='Never'  --env REDIS_PASSWORD=$REDIS_PASSWORD  --image docker.io/bitnami/redis:6.2.7-debian-11-r9 --command -- sleep infinity
+
+   Use the following command to attach to the pod:
+
+   kubectl exec --tty -i redis-client \
+   --namespace redis-system -- bash
+
+2. Connect using the Redis&reg; CLI:
+   REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli -h my-release-redis-master
+   REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli -h my-release-redis-replicas
+
+To connect to your database from outside the cluster execute the following commands:
+
+    export NODE_IP=$(kubectl get nodes --namespace redis-system -o jsonpath="{.items[0].status.addresses[0].address}")
+    export NODE_PORT=$(kubectl get --namespace redis-system -o jsonpath="{.spec.ports[0].nodePort}" services my-release-redis-master)
+    REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli -h $NODE_IP -p $NODE_PORT
+
+
+# 확인
+$ helm -n redis-system ls
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+my-release      redis-system    1               2022-07-01 01:21:32.6958631 +0900 KST   deployed        redis-16.13.1   6.2.7
+
+
+```
+
+my-release-redis-master 는 read/write 용도로 사용되며 my-release-redis-replicas 는 read-only 용도로 사용된다.
+
+
+
+
+
+### (2) Chart Fetch 이후 Install
+
+설치 과정에서 chart 를 다운 받지 못한다면 Chart 를 fetch 받아서 설치하자.
 
 
 
@@ -773,25 +898,41 @@ my-release-redis-master 는 read/write 용도로 사용되며 my-release-redis-r
 
 ```sh
 $ krs get pod
-NAME                            READY   STATUS    RESTARTS   AGE
-my-release-redis-master-0       1/1     Running   0          57s
-my-release-redis-replicas-0     1/1     Running   0          57s
-my-release-redis-replicas-1     1/1     Running   0          27s
-my-release-redis-replicas-2     0/1     Running   0          2s
+NAME                          READY   STATUS    RESTARTS   AGE
+my-release-redis-master-0     1/1     Running   0          6m30s
+my-release-redis-replicas-0   1/1     Running   0          6m30s
+my-release-redis-replicas-1   1/1     Running   0          5m34s
+my-release-redis-replicas-2   1/1     Running   0          5m9s
 
 
 $ krs get svc
 NAME                        TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
-my-release-redis-headless   ClusterIP   None            <none>        6379/TCP         27s
-my-release-redis-master     NodePort    10.43.203.127   <none>        6379:32200/TCP   27s
-my-release-redis-replicas   NodePort    10.43.44.77     <none>        6379:32210/TCP   27s
-
+my-release-redis-headless   ClusterIP   None            <none>        6379/TCP         6m40s
+my-release-redis-master     NodePort    10.108.249.49   <none>        6379:32200/TCP   6m40s
+my-release-redis-replicas   NodePort    10.96.105.76    <none>        6379:32210/TCP   6m40s
 
 ```
 
 
 
-### (4) redis client 확인
+### (4) Catch up
+
+```sh
+
+# 삭제시
+$ helm -n redis-system delete my-release
+
+```
+
+
+
+
+
+## 2) Internal Access
+
+redis client를 cluster 내부에서 실행후 접근하는 방법을 알아보자.
+
+### (1) Redis client 확인
 
 #### docker redis client
 
@@ -804,54 +945,33 @@ $ docker run --name redis-client -d --rm --user root docker.io/bitnami/redis-clu
 ## docker 내에 진입후
 $ docker exec -it redis-client bash
 
-## service 명으로 cluster mode 접근
-$ redis-cli -h 211.254.212.105 -c -a new1234 -p 32200
+## Local PC IP로 cluster mode 접근
+$ redis-cli -h 192.168.31.1 -c -a new1234 -p 32200
 
-## service 명으로 none cluster mode 접근
-$ redis-cli -h 211.254.212.105 -a new1234 -p 32200
+
 
 ```
 
 
 
-#### set/get 확인
+### (2) set/get 확인
 
 ```
 
-211.254.212.105:32200> set a 1
+192.168.31.1:32200>  set a 1
 OK
-211.254.212.105:32200> set b 2
+192.168.31.1:32200> set b 2
 OK
-211.254.212.105:32200> set c 3
+192.168.31.1:32200> set c 3
 OK
-211.254.212.105:32200> get a
+192.168.31.1:32200> get a
 "1"
-211.254.212.105:32200> get b
+192.168.31.1:32200> get b
 "2"
-211.254.212.105:32200> get c
+192.168.31.1:32200> get c
+"3"
 
 ```
-
-
-
-
-
-## 9) local redis client set
-
-local pc 에서 access 테스트를 위해 docker redis client 를 설치하자.
-
-```sh
-
-## redis-client 용도로 docker client 를 실행한다.
-$ docker run --name redis-client -d --rm --user root docker.io/bitnami/redis-cluster:6.2.7-debian-11-r3 sleep 365d
-
-## docker 내에 진입후
-$ docker exec -it redis-client bash
-
-
-```
-
-
 
 
 
@@ -940,44 +1060,14 @@ spec:
     name: p3x-redis-ui
   selector:
     app.kubernetes.io/name: p3x-redis-ui
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: p3x-redis-ui-ingress
-  annotations:
-    # kubernetes.io/ingress.class: nginx
-    kubernetes.io/ingress.class: traefik
-    # cert-manager support
-    # cert-manager.io/cluster-issuer: letsencrypt
-    # oauth2-proxy support
-    # nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
-    # nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
-spec:
-  # tls:
-  # - hosts: [p3x-redis-ui.example.com]
-  #   secretName: p3x-redis-ui-tls
-  rules:
-  - host: p3xredisui.redis-system.ktcloud.211.254.212.105.nip.io
-    http:
-      paths:
-      - backend:
-          service:
-            name: p3x-redis-ui-service
-            port:
-              number: 7843
-        path: /
-        pathType: Prefix
+  type: NodePort
 ---
 
 # install
 $ kubectl -n redis-system apply -f ./redis/redisui/11.p3xredisui.yaml
 
-
 # 삭제시
 $ kubectl -n redis-system delete -f ./redis/redisui/11.p3xredisui.yaml
-
-
 
 ```
 

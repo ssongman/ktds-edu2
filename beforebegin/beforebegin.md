@@ -194,7 +194,7 @@ $ mkdir ~/githubrepo
 $ cd ~/githubrepo
 
 $ git clone https://github.com/ssongman/ktds-edu2.git
-Cloning into 'ktds-edu'...
+Cloning into 'ktds-edu2'...
 remote: Enumerating objects: 69, done.
 remote: Counting objects: 100% (69/69), done.
 remote: Compressing objects: 100% (55/55), done.

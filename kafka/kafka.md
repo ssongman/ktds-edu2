@@ -1,18 +1,107 @@
-# Kafka on Kubernetes
+# Kafka Hands-in
 
 
 
 
 
-# 1. 사전설정
+# 1. Kafka 실습환경
 
-## 1.1 namespace 생성
 
-strimzi operator 와 kafka cluster 를 kafka namespace 에 설치해야 한다.  worker node 를 준비한후 kafka namespace 를 생성하자.
+
+## 1) Strimzi 설명
+
+
+
+
+
+## 2) local pc에 kubernete 설치
+
+
+
+localhost 에서 kubernetes 환경은 아래와 같이 두가지 방법으로 실행할 수 있다.
+
+
+
+### (1) docker-desktop 에서 kubernetes 활성화 하기
+
+dockerdesktop
+
+위치 : Dashboard > Settings > Kubernetes
+
+Enable Kubernetes 에 check 하기
+
+
+
+- 확인
 
 ```
-$ kubectl create ns kafka
 ```
+
+
+
+
+
+### (2) wsl 에서 k3s 설정
+
+
+
+
+
+### (3) kubectl client 환경설정
+
+kubernetes 가 기존에 설치 되어 있던 환경이라면 cluster 를 선택할 수 있다.
+
+```sh
+# context 확인
+$ kubectl config get-contexts
+CURRENT   NAME             CLUSTER          AUTHINFO         NAMESPACE
+*         default          default          default
+          docker-desktop   docker-desktop   docker-desktop
+
+
+# docker-desktop 으로 변경
+$ kubectl config set current-context docker-desktop
+
+
+# context 확인
+$ kubectl config get-contexts
+CURRENT   NAME             CLUSTER          AUTHINFO         NAMESPACE
+          default          default          default
+*         docker-desktop   docker-desktop   docker-desktop
+
+
+
+# kubectl 연결 확인
+$ kubectl version -o yaml
+clientVersion:
+  buildDate: "2022-05-03T13:46:05Z"
+  compiler: gc
+  gitCommit: 4ce5a8954017644c5420bae81d72b09b735c21f0
+  gitTreeState: clean
+  gitVersion: v1.24.0
+  goVersion: go1.18.1
+  major: "1"
+  minor: "24"
+  platform: linux/amd64
+kustomizeVersion: v4.5.4
+serverVersion:
+  buildDate: "2022-05-03T13:38:19Z"
+  compiler: gc
+  gitCommit: 4ce5a8954017644c5420bae81d72b09b735c21f0
+  gitTreeState: clean
+  gitVersion: v1.24.0
+  goVersion: go1.18.1
+  major: "1"
+  minor: "24"
+  platform: linux/amd64
+
+# 위와 같이 serverVersion 이 표현되어야 정상연결 된 것이다.
+
+```
+
+
+
+
 
 
 
@@ -24,7 +113,21 @@ srimzi  operator 를 install 한다.
 
 
 
-## 2.1 관련 file download
+## 1) namespace 생성
+
+strimzi operator 와 kafka cluster 를 kafka namespace 에 설치해야 한다.  worker node 를 준비한후 kafka namespace 를 생성하자.
+
+```
+$ kubectl create ns kafka
+```
+
+
+
+
+
+
+
+## 2) Strmzi download
 
 
 
@@ -44,11 +147,15 @@ $ cd  ~/song/strimzi/strimzi-0.29.0
 
 
 
-or 미리 받아놓은 교육자료를 이용해도 된다.
+OR
 
-
+교육자료를 이용해도 된다.
 
 ```sh
+$ cd ~/githubrepo/
+
+$ git clone https://github.com/ssongman/ktds-edu2
+
 $ cd ~/githubrepo/ktds-edu2
 
 $ cd ~/githubrepo/ktds-edu2/kafka/strimzi/strimzi-0.29.0/strimzi-0.29.0
@@ -60,7 +167,7 @@ $ cd ~/githubrepo/ktds-edu2/kafka/strimzi/strimzi-0.29.0/strimzi-0.29.0
 
 
 
-## 2.2 single name 모드 namespace 설정
+## 3) single name 모드 namespace 설정
 
 - single name 모드로 설치진행
   - strimzi operator 는 다양한 namespace 에서 kafka cluster 를 쉽게 생성할 수 있는 구조로 운영이 가능하다.  이때 STRIMZI_NAMESPACE 를 설정하여 특정 namespace 만으로 cluster 를 제한 할 수 있다.  ICIS-TR SA의 경우는 kafka-system 라는 namespace 에서만  kafka cluster 를 구성할 수 있도록 설정한다. 그러므로 아래 중 Single namespace 설정에 해당한다.
@@ -75,7 +182,7 @@ $ sed -i 's/namespace: .*/namespace: kafka/' kafka/strimzi/install/cluster-opera
 
 
 
-## 2.4 deploy
+## 4) deploy
 
 - kafka namespace 를 watch 할 수 있는 권한 부여
 
@@ -83,13 +190,13 @@ $ sed -i 's/namespace: .*/namespace: kafka/' kafka/strimzi/install/cluster-opera
 $ cd ~/githubrepo/ktds-edu2
 
 # kafka namespace 를 watch 할 수 있는 권한 부여
-$ kubectl -n kafka create -f kafka/strimzi/install/cluster-operator/020-RoleBinding-strimzi-cluster-operator.yaml
+$ kubectl -n kafka create -f ./kafka/strimzi/install/cluster-operator/020-RoleBinding-strimzi-cluster-operator.yaml
 
-$ kubectl -n kafka create -f kafka/strimzi/install/cluster-operator/031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml
+$ kubectl -n kafka create -f ./kafka/strimzi/install/cluster-operator/031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml
 
 
 # Deploy the CRDs
-$ kubectl -n kafka create -f kafka/strimzi/install/cluster-operator/ 
+$ kubectl -n kafka create -f ./kafka/strimzi/kafka/strimzi/install/cluster-operator/ 
 
 
 
@@ -102,12 +209,12 @@ strimzi-cluster-operator-86864b86d5-rfshw   0/1     Running   0          18s
 
 
 
-## 2.5 clean up
+## 5) clean up
 
 ```sh
 $ cd ~/githubrepo/ktds-edu2
 
-$ oc -n kafka delete -f install/cluster-operator
+$ kubectl -n kafka delete -f ./kafka/strimzi/install/cluster-operator
 ```
 
 
@@ -124,7 +231,7 @@ $ oc -n kafka delete -f install/cluster-operator
 
 ### (1) kafka cluster 생성(no 인증)
 
-인증없는 기본생성 이므로 참고만 하자.
+아래는 인증없이 접근 가능한 kafka cluster 를 생성하는 yaml 이므로 참고만 하자.
 
 ```sh
 $ cd ~/githubrepo/ktds-edu2
@@ -228,7 +335,7 @@ $ kubectl -n kafka apply -f ./kafka/strimzi/kafka/12.kafka-ephemeral-auth.yaml
 
 - 인증메커니즘
 
-  - SASL 은 인증 멫 보안 서비스를 제공하는 프레임워크이다.
+  - SASL 은 인증 및 보안 서비스를 제공하는 프레임워크이다.
   - 위 yaml 파일의 인증방식은 scram-sha-512  방식인데 이는 SASL 이 지원하는 메커니즘 중 하나이며 Broker 를 SASL 구성로 구성한다.
 
 
@@ -273,25 +380,16 @@ $ kubectl -n kafka delete kafka my-cluster
 
 # 4.  KafkaUser
 
-- KafkaUser 를 생성하면 secret 에 Opaque 가 생성되며 향후 인증 password 로 사용됨
-- 어떤 topic 에 접근 가능할지를 명시할 수 있다.
-- 그러므로 특정 user로 namespace별 topic 간 경계설정이 가능하다.
+- kafka cluster 생성시 scram-sha-512 type 의 authentication 를 추가했다면 반드시 KafkaUser 가 존재해야 한다.
+
+- KafkaUser 를 생성하면 secret 에 Opaque 가 생성되며 향후 인증 password 로 사용된다.
+- 어떤 topic 에 어떻게 접근할지 에 대한 acl 기능을 추가할 수 있다.
 
 
 
 ## 1) User 정책
 
-
-
-- user 정책
-
-```
-[Part명]-user
-[Part명]-[서비스명]-user
-[Part명]-[서비스명]-[서브도메인]-user
-```
-
-
+아래와 같이 ACL (Access Control List) 정책을 지정할 수 있다.
 
 - sample user 별 설명
 
@@ -337,10 +435,10 @@ spec:
         resource:
           type: topic
           name: my
-          patternType: prefix     # 1)
+          patternType: prefix
       - operation: All
         resource:
-          name: my                # 2)
+          name: my
           patternType: prefix
           type: group
       - operation: All
@@ -390,8 +488,9 @@ $ kubectl -n kafka get secret my-user -o jsonpath='{.data.password}' | base64 -d
 pprOnk80CDfo
 
 # user/pass 
-  my-user / pprOnk80CDfo   - KT Cloud 기준
-  my-user / KV9tDU0AY4Wu   - Openshift 기준
+## KT Cloud 기준 : my-user / pprOnk80CDfo
+## Local 기준    : my-user / eGVNg7ZvPbi0 
+  
   
 ```
 
@@ -416,9 +515,11 @@ $ kubectl -n kafka delete kafkauser my-user
 
 ## 1) Topic 정책 
 
-일반적인 topic 정책
+앞서 KafkaUser 의 ACL 기능을 이용해서 kafka topic 을 제어하는 방법을 확인했다.  그러므로 topiic 명칭을 어떻게 정하는지에 대해서 다양한 시나리오를 생각해 볼 수 있다. 아래 특정 프로젝트의 topic name 정책을 살펴보자.
 
 
+
+### (1) ICIS-TR Topic Name 정책
 
 - topic 정책
 
@@ -431,7 +532,6 @@ $ kubectl -n kafka delete kafkauser my-user
 - sample topic 
 
 ```
-
 order-intl-board-create
 order-intl-board-update
 order-intl-board-delete
@@ -452,8 +552,6 @@ rater-intl-board-delete
 ## 2) Topic 생성
 
 ### (1) KafkaTopic 생성
-
-#### 
 
 ```sh
 $ cd ~/githubrepo/ktds-edu2
@@ -485,8 +583,7 @@ my-topic   my-cluster   3            3                    True
 
 ```
 
-- partitions 1이면 producer 수행시 아래 메세지 발생할 수 있음.
-  -  LEADER_NOT_AVAILABLE
+
 
 ### (2) 확인
 
@@ -498,29 +595,27 @@ metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
       {"apiVersion":"kafka.strimzi.io/v1beta2","kind":"KafkaTopic","metadata":{"annotations":{},"labels":{"strimzi.io/cluster":"my-cluster"},"name":"my-topic","namespace":"kafka"},"spec":{"config":{"retention.ms":86400000,"segment.bytes":1073741824},"partitions":3,"replicas":3}}
-  creationTimestamp: "2022-06-26T04:07:31Z"
-  generation: 3
+  creationTimestamp: "2022-06-30T12:34:43Z"
+  generation: 1
   labels:
     strimzi.io/cluster: my-cluster
   name: my-topic
   namespace: kafka
-  resourceVersion: "2256885"
-  uid: 07a78a24-b028-4bd6-8f06-2848be93e1dc
+  resourceVersion: "7118"
+  uid: 53b4001d-1b54-48c9-b749-997a5beb8dd4
 spec:
   config:
     retention.ms: 86400000
     segment.bytes: 1073741824
   partitions: 3
   replicas: 3
-  topicName: my-topic
 status:
   conditions:
-  - lastTransitionTime: "2022-06-26T04:08:55.432530Z"
+  - lastTransitionTime: "2022-06-30T12:34:44.290021Z"
     status: "True"
     type: Ready
-  observedGeneration: 3
+  observedGeneration: 1
   topicName: my-topic
-
 
 ```
 
@@ -615,7 +710,7 @@ Kafka 클러스터와 동일한 Kubernetes 클러스터 내에서 실행되는 �
 일반 서비스와 headless 서비스를 확인할 수 있다.
 
 ```sh
-$ kkf get svc
+$ kubectl -n kafka get svc
 NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE
 my-cluster-kafka-bootstrap    ClusterIP   10.43.79.201    <none>        9091/TCP,9092/TCP,9093/TCP            80m
 my-cluster-kafka-brokers      ClusterIP   None            <none>        9090/TCP,9091/TCP,9092/TCP,9093/TCP   80m
@@ -624,7 +719,7 @@ my-cluster-zookeeper-nodes    ClusterIP   None            <none>        2181/TCP
 
 ```
 
-- my-cluster-kafka-bootstrap:9092 로 접근이 가능
+- 우리는 Cluster 내에서  my-cluster-kafka-bootstrap:9092 로 접근을 시도할 것이다.
 
 
 
@@ -632,24 +727,41 @@ my-cluster-zookeeper-nodes    ClusterIP   None            <none>        2181/TCP
 
 ## 3) kafkacat 로 확인
 
+kafka 접근 가능여부를 확인하기 위해 kafka Client 용 app 인 kafkacat 을 설치하자.
 
 
-### 1) kafkacat 설치
+
+### (1) kafkacat 설치
 
 ```sh
 $ kubectl -n kafka create deploy kafkacat \
     --image=confluentinc/cp-kafkacat:latest \
     -- sleep 365d
 
+# pod 내부명령 수행
 $ kubectl -n kafka exec -it deploy/kafkacat -- bash
 
+
+```
+
+
+
+#### ※ 참고
+windows 환경의 gitbash 를 이용해 pod 내부명령을 수행한다면 prompt 가 보이지 않을것이다.
+windows 에서 linux 체제와 호환이 되지 않아서 발생하는 이슈이다.
+아래와 같이 winpty 를 붙인다면 prompt 가 보이니 참고하자.
+
+```sh
+
+# pod 내부명령 수행
+$ winpty kubectl -n kafka exec -it deploy/kafkacat -- bash
 ```
 
 
 
 
 
-### 2) pub/sub test
+### (2) pub/sub test
 
 id/pass 가 필요
 
@@ -659,7 +771,7 @@ $ kubectl -n kafka exec -it deploy/kafkacat -- bash
 
 export BROKERS=my-cluster-kafka-bootstrap:9092
 export KAFKAUSER=my-user
-export PASSWORD=pprOnk80CDfo
+export PASSWORD=eGVNg7ZvPbi0 
 export TOPIC=my-topic
  
 ## topic 리스트
@@ -679,6 +791,9 @@ Metadata for all topics (from broker -1: sasl_plaintext://my-cluster-kafka-boots
     partition 0, leader 1, replicas: 1, isrs: 1
     partition 1, leader 0, replicas: 0, isrs: 0
     partition 2, leader 2, replicas: 2, isrs: 2
+
+## broker0, 1, 2 의 주소를 잘 이해하자.
+## 내부 
 
 
 
@@ -730,7 +845,6 @@ kafkacat -b $BROKERS \
 <-- OK
 
 
-
 ## 대량 발송 모드
 $ cat > msg.txt
 ---
@@ -757,19 +871,16 @@ while true; do kafkacat -b $BROKERS \
 
 <-- OK
 
-
-
 ```
 
 
 
-### 3) Clean up
+### (3) Clean up
 
 ```sh
 
 ## delete deploy
-$ kubectl -n kafka delete deploy kafkacat 
-
+$ kubectl -n kafka delete deploy kafkacat
 ```
 
 
@@ -791,8 +902,6 @@ Strimzi 는 외부에서 접근가능하도록  다양한 기능을 제공한다
 
 
 
-
-
 ## 1) Node Port
 
 
@@ -804,6 +913,7 @@ Strimzi 는 외부에서 접근가능하도록  다양한 기능을 제공한다
 
 ```sh
 $ kubectl -n kafka edit kafka my-cluster
+
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
@@ -813,9 +923,18 @@ metadata:
 spec:
   ...
     listeners:
-    ...
+    - authentication:
+        type: scram-sha-512
+      name: plain
+      port: 9092
+      tls: false
+      type: internal
+    - name: tls
+      port: 9093
+      tls: true
+      type: internal
     
-    ## nodeport type 등록
+    ## nodeport type 등록 - 아래모두 삽입 하자.
     - name: external
       port: 9094
       type: nodeport
@@ -827,13 +946,13 @@ spec:
           nodePort: 32100
         brokers:
         - broker: 0
-          advertisedHost: my-cluster.kafka.ktcloud.211.254.212.105.nip.io
+          advertisedHost: my-cluster.kafka.localhost.192.168.31.1.nip.io
           nodePort: 32000
         - broker: 1
-          advertisedHost: my-cluster.kafka.ktcloud.211.254.212.105.nip.io
+          advertisedHost: my-cluster.kafka.localhost.192.168.31.1.nip.io
           nodePort: 32001
         - broker: 2
-          advertisedHost: my-cluster.kafka.ktcloud.211.254.212.105.nip.io
+          advertisedHost: my-cluster.kafka.localhost.192.168.31.1.nip.io
           nodePort: 32002
 
 ...
@@ -842,60 +961,125 @@ spec:
 
 ```
 
-- AdvertisedHost 필드에는 DNS 이름이나 IP 주소를 표기할 수 있다.
 - nodePort 를 직접 명시할 수 있다.
+
+- AdvertisedHost 필드에는 DNS 이름이나 IP 주소를 표기할 수 있다.
+
+- node port 를 인식할 수 있는 본인 PC 의 IP를 인식하도록 nip host 에 본인 IP 를 삽입하자.
+
+- 참고로 본인  IP 는 명령으로 확인할 수 있다.
+
+  ```sh
+  $ ipconfig
+  
+  Windows IP 구성
+  
+  
+  무선 LAN 어댑터 로컬 영역 연결* 1:
+  
+     미디어 상태 . . . . . . . . : 미디어 연결 끊김
+     연결별 DNS 접미사. . . . :
+  
+  무선 LAN 어댑터 로컬 영역 연결* 10:
+  
+     미디어 상태 . . . . . . . . : 미디어 연결 끊김
+     연결별 DNS 접미사. . . . :
+  
+  이더넷 어댑터 VMware Network Adapter VMnet1:
+  
+     연결별 DNS 접미사. . . . :
+     링크-로컬 IPv6 주소 . . . . : fe80::b43c:3b41:b773:48da%9
+     IPv4 주소 . . . . . . . . . : 192.168.31.1                   <=============  해당 IP 를 추출한다.
+     서브넷 마스크 . . . . . . . : 255.255.255.0
+     기본 게이트웨이 . . . . . . :
+  
+  이더넷 어댑터 VMware Network Adapter VMnet8:
+  
+     연결별 DNS 접미사. . . . :
+     링크-로컬 IPv6 주소 . . . . : fe80::905c:f7ec:a1e4:7ca6%12
+     IPv4 주소 . . . . . . . . . : 192.168.239.1
+     서브넷 마스크 . . . . . . . : 255.255.255.0
+     
+  ```
+
+  
+
+
+
+
 
 
 
 ### (2) 확인
 
 ```sh
-$ kkf get svc
-NAME                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE
-my-cluster-kafka-0                    NodePort    10.43.61.224    <none>        9094:32000/TCP                        42s
-my-cluster-kafka-1                    NodePort    10.43.13.33     <none>        9094:32001/TCP                        42s
-my-cluster-kafka-2                    NodePort    10.43.153.66    <none>        9094:32002/TCP                        42s
-my-cluster-kafka-bootstrap            ClusterIP   10.43.79.201    <none>        9091/TCP,9092/TCP,9093/TCP            122m
-my-cluster-kafka-brokers              ClusterIP   None            <none>        9090/TCP,9091/TCP,9092/TCP,9093/TCP   122m
-my-cluster-kafka-external-bootstrap   NodePort    10.43.157.160   <none>        9094:32100/TCP                        42s
-my-cluster-zookeeper-client           ClusterIP   10.43.125.232   <none>        2181/TCP                              123m
-my-cluster-zookeeper-nodes            ClusterIP   None            <none>        2181/TCP,2888/TCP,3888/TCP            123m
+$ kubectl -n kafka get kafka my-cluster
+NAME         DESIRED KAFKA REPLICAS   DESIRED ZK REPLICAS   READY   WARNINGS
+my-cluster   3                        3                     True
+
+
+
+
+$ kubectl -n kafka get kafka my-cluster
+...
+status:
+...
+  - addresses:
+    - host: my-cluster.kafka.localhost.192.168.31.1.nip.io
+      port: 32100
+    bootstrapServers: my-cluster.kafka.localhost.192.168.31.1.nip.io:32100
+    name: external
+    type: external
+---
+
+
+
+$ kubectl -n kafka get svc
+NAME                                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                               AGE
+my-cluster-kafka-0                    NodePort    10.107.81.9      <none>        9094:32000/TCP                        49s
+my-cluster-kafka-1                    NodePort    10.108.122.107   <none>        9094:32001/TCP                        49s
+my-cluster-kafka-2                    NodePort    10.100.130.247   <none>        9094:32002/TCP                        49s
+my-cluster-kafka-bootstrap            ClusterIP   10.104.45.188    <none>        9091/TCP,9092/TCP,9093/TCP            60m
+my-cluster-kafka-brokers              ClusterIP   None             <none>        9090/TCP,9091/TCP,9092/TCP,9093/TCP   60m
+my-cluster-kafka-external-bootstrap   NodePort    10.98.74.30      <none>        9094:32100/TCP                        49s
+my-cluster-zookeeper-client           ClusterIP   10.98.160.11     <none>        2181/TCP                              61m
+my-cluster-zookeeper-nodes            ClusterIP   None             <none>        2181/TCP,2888/TCP,3888/TCP            61m
 
 
 ## 정리하면...
-my-cluster-kafka-external-bootstrap:32100
-my-cluster-kafka-0:32000
-my-cluster-kafka-1:32001
-my-cluster-kafka-2:32002
-
-
-my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100
-my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32000
-my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32001
-my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32002
+## 외부에서 접근시 아래 주소로 cluster내부에 있는 kafka 에 접근 할 수 있다.
+my-cluster.kafka.localhost.192.168.31.1.nip.io:32100
 ```
 
 
 
-### (3) kafkacat로 확인
+### (3) kafkacat 으로 확인
+
+Local PC(Cluster 외부) 에서  kafka 접근 가능여부를 확인하기 위해 kafkacat 을 Local PC 에 설치하자.
+
+
+
+#### 1) docker run
+
+kafkacat 을 docker 로 설치한다.
 
 ```sh
-$ kubectl -n kafka exec -it deploy/kafkacat -- bash
+$ docker run --name kafkacat -d --user root confluentinc/cp-kafkacat:latest sleep 365d
 
 ```
 
 
 
-```sh
+#### 2) pub/sub 확인
 
-## nodeport 로 확인
-export BROKERS=my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100,\
-my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32000,\
-my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32001,\
-my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32002
+```sh
+$ docker exec -it kafkacat bash
+
+export BROKERS=my-cluster.kafka.localhost.192.168.31.1.nip.io:32100
 export KAFKAUSER=my-user
-export PASSWORD=pprOnk80CDfo
-export TOPIC=edu-topic-01
+export PASSWORD=eGVNg7ZvPbi0
+export TOPIC=my-topic
+export GROUP=my-topic-group
 
 
 ## topic 리스트
@@ -904,17 +1088,21 @@ kafkacat -b $BROKERS \
   -X sasl.mechanisms=SCRAM-SHA-512 \
   -X sasl.username=$KAFKAUSER \
   -X sasl.password=$PASSWORD -L
-
-Metadata for all topics (from broker -1: sasl_plaintext://my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100/bootstrap):
+  
+  
+Metadata for all topics (from broker -1: sasl_plaintext://my-cluster.kafka.localhost.192.168.31.1.nip.io:32100/bootstrap):
  3 brokers:
-  broker 0 at my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32000 (controller)
-  broker 2 at my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32002
-  broker 1 at my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32001
+  broker 0 at my-cluster.kafka.localhost.192.168.31.1.nip.io:32000
+  broker 2 at my-cluster.kafka.localhost.192.168.31.1.nip.io:32002 (controller)
+  broker 1 at my-cluster.kafka.localhost.192.168.31.1.nip.io:32001
  1 topics:
   topic "my-topic" with 3 partitions:
-    partition 0, leader 1, replicas: 1, isrs: 1
-    partition 1, leader 0, replicas: 0, isrs: 0
-    partition 2, leader 2, replicas: 2, isrs: 2
+    partition 0, leader 2, replicas: 2,1,0, isrs: 1,2,0
+    partition 1, leader 1, replicas: 1,0,2, isrs: 1,2,0
+    partition 2, leader 0, replicas: 0,2,1, isrs: 1,2,0
+
+# broker0, 1, 3 을 확인하자.
+
 
 ## consumer
 kafkacat -b $BROKERS \
@@ -937,106 +1125,6 @@ kafkacat -b $BROKERS \
   
 <-- OK 
 
-```
-
-
-
-
-
-## 2) Ingress - k3s에서는 https 통신 불가
-
-- Route or Ingress type listener  는 반드시 TLS 통신만 가능하다.
-
-
-
-### (1) Ingress 개념
-
-
-
-Strimzi가 Ingress를 사용하여 Kafka를 노출하는 방식은 이전 블로그 게시물에서 이미 익숙할 것입니다. 클러스터의 각 Kafka 브로커에 개별적으로 액세스하기 위한 부트스트랩 서비스 및 추가 서비스로 하나의 서비스를 생성합니다. 이러한 각 서비스에 대해 해당 TLS 통과 규칙을 사용하여 하나의 Ingress 리소스도 생성합니다.
-
-![Accessing Kafka using Ingress](kafka.assets/2019-05-23-ingress-access.png)
-
-Ingress를 사용하도록 Strimzi를 구성할 때 외부 리스너의 유형을 지정 하고 필드 `ingress`의 부트스트랩뿐만 아니라 다른 브로커에 사용되는 수신 호스트를 지정해야 합니다
-
-
-
-### (2) Kafka Cluster Ingress 등록
-
-```sh
-$ kubectl -n kafka edit kafka my-cluster
----
-apiVersion: kafka.strimzi.io/v1beta2
-kind: Kafka
-metadata:
-  name: my-cluster
-  namespace: kafka
-spec:
-  kafka:
-    authorization:
-      type: simple
-    config:
-      ...
-    listeners:
-    - authentication:
-        type: scram-sha-512
-      name: plain
-      port: 9092
-      tls: false
-      type: internal
-    - name: tls
-      port: 9093
-      tls: true
-      type: internal
-      
-    ## ingress type 등록
-    - authentication:
-        type: scram-sha-512
-      configuration:
-        bootstrap:
-          host: bootstrap.kafka.ktcloud.211.254.212.105.nip.io
-          annotations:
-            #external-dns.alpha.kubernetes.io/hostname: bootstrap.kafka.ktcloud.211.254.212.105.nip.io
-            #external-dns.alpha.kubernetes.io/ttl: "60"
-            kubernetes.io/ingress.class: traefik
-            ingress.kubernetes.io/ssl-passthrough: "true"
-            traefik.ingress.kubernetes.io/backend-protocol: HTTPS
-            traefik.ingress.kubernetes.io/ssl-passthrough: "true"
-        brokers:
-        - broker: 0
-          host: broker-0.kafka.ktcloud.211.254.212.105.nip.io
-          annotations:
-            #external-dns.alpha.kubernetes.io/hostname: bootstrap.kafka.ktcloud.211.254.212.105.nip.io
-            #external-dns.alpha.kubernetes.io/ttl: "60"
-            kubernetes.io/ingress.class: traefik
-            ingress.kubernetes.io/ssl-passthrough: "true"
-            traefik.ingress.kubernetes.io/backend-protocol: HTTPS
-            traefik.ingress.kubernetes.io/ssl-passthrough: "true"
-        - broker: 1
-          host: broker-1.kafka.ktcloud.211.254.212.105.nip.io
-          annotations:
-            #external-dns.alpha.kubernetes.io/hostname: bootstrap.kafka.ktcloud.211.254.212.105.nip.io
-            #external-dns.alpha.kubernetes.io/ttl: "60"
-            kubernetes.io/ingress.class: traefik
-            ingress.kubernetes.io/ssl-passthrough: "true"
-            traefik.ingress.kubernetes.io/backend-protocol: HTTPS
-            traefik.ingress.kubernetes.io/ssl-passthrough: "true"
-        - broker: 2
-          host: broker-2.kafka.ktcloud.211.254.212.105.nip.io
-          annotations:
-            #external-dns.alpha.kubernetes.io/hostname: bootstrap.kafka.ktcloud.211.254.212.105.nip.io
-            #external-dns.alpha.kubernetes.io/ttl: "60"
-            kubernetes.io/ingress.class: traefik
-            ingress.kubernetes.io/ssl-passthrough: "true"
-            traefik.ingress.kubernetes.io/backend-protocol: HTTPS
-            traefik.ingress.kubernetes.io/ssl-passthrough: "true"
-      name: external
-      port: 9094
-      tls: true
-      type: ingress
-...
----
-
 
 ```
 
@@ -1044,808 +1132,7 @@ spec:
 
 
 
-임시
-
-```
-
-##임시
-
-  annotations:
-    ingress.kubernetes.io/ssl-passthrough: "true"
-    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-    
- annotations:
-   kubernetes.io/ingress.class: traefik
-   traefik.ingress.kubernetes.io/auth-type: "basic"
-   traefik.ingress.kubernetes.io/auth-secret: "mysecret"
-   
-  annotations:
-    kubernetes.io/ingress.class: traefik
-
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    traefik.frontend.rule.type: PathPrefixStrip
-
-  annotations:
-    traefik.ingress.kubernetes.io/service-weights: |
-      my-app: 99%
-      my-app-canary: 1%
-
-The TLS certificates will be added to all entrypoints defined by the ingress annotation traefik.frontend.entryPoints. 
-If no such annotation is provided, the TLS certificates will be added to all TLS-enabled defaultEntryPoints.
-
-
-```
-
-
-
-
-
-
-
-### (3) 확인
-
-
-
-```sh
-
-$ kkf get svc
-NAME                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE
-my-cluster-kafka-0                    ClusterIP   10.43.162.219   <none>        9094/TCP                              2m49s
-my-cluster-kafka-1                    ClusterIP   10.43.21.92     <none>        9094/TCP                              2m49s
-my-cluster-kafka-2                    ClusterIP   10.43.193.36    <none>        9094/TCP                              2m49s
-my-cluster-kafka-bootstrap            ClusterIP   10.43.79.201    <none>        9091/TCP,9092/TCP,9093/TCP            3h16m
-my-cluster-kafka-brokers              ClusterIP   None            <none>        9090/TCP,9091/TCP,9092/TCP,9093/TCP   3h16m
-my-cluster-kafka-external-bootstrap   ClusterIP   10.43.116.121   <none>        9094/TCP                              2m49s
-my-cluster-zookeeper-client           ClusterIP   10.43.125.232   <none>        2181/TCP                              3h16m
-my-cluster-zookeeper-nodes            ClusterIP   None            <none>        2181/TCP,2888/TCP,3888/TCP            3h16m
-
-
-$ kkf get ingress
-NAME                         CLASS    HOSTS                                            ADDRESS                                                                   PORTS     AGE
-my-cluster-kafka-0           <none>   broker-0.kafka.ktcloud.211.254.212.105.nip.io    172.27.0.168,172.27.0.29,172.27.0.48,172.27.0.68,172.27.0.76,172.27.1.2   80, 443   13m
-my-cluster-kafka-1           <none>   broker-1.kafka.ktcloud.211.254.212.105.nip.io    172.27.0.168,172.27.0.29,172.27.0.48,172.27.0.68,172.27.0.76,172.27.1.2   80, 443   13m
-my-cluster-kafka-2           <none>   broker-2.kafka.ktcloud.211.254.212.105.nip.io    172.27.0.168,172.27.0.29,172.27.0.48,172.27.0.68,172.27.0.76,172.27.1.2   80, 443   13m
-my-cluster-kafka-bootstrap   <none>   bootstrap.kafka.ktcloud.211.254.212.105.nip.io   172.27.0.168,172.27.0.29,172.27.0.48,172.27.0.68,172.27.0.76,172.27.1.2   80, 443   13m
-
-
-$ kkf get ingress my-cluster-kafka-bootstrap -o yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    ingress.kubernetes.io/ssl-passthrough: "true"
-    kubernetes.io/ingress.class: traefik
-    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-    traefik.ingress.kubernetes.io/backend-protocol: HTTPS
-    traefik.ingress.kubernetes.io/ssl-passthrough: "true"
-  creationTimestamp: "2022-06-25T12:49:27Z"
-  generation: 1
-  labels:
-    app.kubernetes.io/instance: my-cluster
-    app.kubernetes.io/managed-by: strimzi-cluster-operator
-    app.kubernetes.io/name: kafka
-    app.kubernetes.io/part-of: strimzi-my-cluster
-    strimzi.io/cluster: my-cluster
-    strimzi.io/kind: Kafka
-    strimzi.io/name: my-cluster-kafka
-  name: my-cluster-kafka-bootstrap
-  namespace: kafka
-  ownerReferences:
-  - apiVersion: kafka.strimzi.io/v1beta2
-    blockOwnerDeletion: false
-    controller: false
-    kind: Kafka
-    name: my-cluster
-    uid: ccd2f8af-cf45-47ae-93f7-54f4b3f356af
-  resourceVersion: "2246186"
-  uid: e73de52b-aabb-4ca5-8c4e-c1247f041cdc
-spec:
-  rules:
-  - host: bootstrap.kafka.ktcloud.211.254.212.105.nip.io
-    http:
-      paths:
-      - backend:
-          service:
-            name: my-cluster-kafka-external-bootstrap
-            port:
-              number: 9094
-        path: /
-        pathType: Prefix
-  tls:
-  - hosts:
-    - bootstrap.kafka.ktcloud.211.254.212.105.nip.io
-status:
-  loadBalancer:
-    ingress:
-    - ip: 172.27.0.168
-    - ip: 172.27.0.29
-    - ip: 172.27.0.48
-    - ip: 172.27.0.68
-    - ip: 172.27.0.76
-    - ip: 172.27.1.2
-
-
-```
-
-
-
-
-
-### (4) 인증서 획득
-
-ingress 를 통한 접근은 반드시 인증서가 필요하다.
-
-```sh
-$ kubectl -n kafka get secret my-cluster-cluster-ca-cert
-NAME                         TYPE     DATA   AGE
-my-cluster-cluster-ca-cert   Opaque   3      3h17m
-
-
-$ kubectl -n kafka get secret my-cluster-cluster-ca-cert -o jsonpath='{.data.ca\.crt}' | base64 -d
-
------BEGIN CERTIFICATE-----
-MIIFLTCCAxWgAwIBAgIUEcVPPUnITIf8UHljLTblIqddX5kwDQYJKoZIhvcNAQEN
-BQAwLTETMBEGA1UECgwKaW8uc3RyaW16aTEWMBQGA1UEAwwNY2x1c3Rlci1jYSB2
-MDAeFw0yMjA2MjUwODM4MzVaFw0yMzA2MjUwODM4MzVaMC0xEzARBgNVBAoMCmlv
-LnN0cmltemkxFjAUBgNVBAMMDWNsdXN0ZXItY2EgdjAwggIiMA0GCSqGSIb3DQEB
-AQUAA4ICDwAwggIKAoICAQCzzVoubinnlduqFhQlMJ0zSdaUsFrukKwopXbWwobI
-dH+tEZq4rLIBZ1uhqOsC9hhlJmh96bYDiOf2nLb4fP3IZ8R0qmBwZR/bF5kLsmlW
-IpdYhUHntySWQjisMGN36FFHR4DDWHST722s8vVzuiu3J8Hlo4bQ8G68d5wsYKgB
-a8idHt+d4GIAmaKwXLv7SGPcMyCmFg0796K28xTKm+ydhR/jz3kka+jw2BlC+cRz
-DS4qNdIbHXanCidUZ2sAY6nBslfcRNnCrAN3CVMaPi96wZgrZdx0vb2KVc+49LCa
-SRtRPafv6sCz3w1/dYtpcBdo84B0oYS3yzJo7gP6rbsg/SXDV7/x5ppHXCJlYF0V
-v6drgBC6l9J7Me7yDiTP6tZO9GsWXdhk2SgZ1I+Bs6pkOTU6ixoV98mOtusXa3SE
-tQT79GEtPpeF3sXMoJgqlA8+WJ2y4dWuBNP6fDKgU7gCasUgRA4It5v6ZOFBdQai
-0k+Hy31dGR4qfP0k70EIJspc0Uv3IEFWMUHqmpgn8iv414x3FzsYmwx/Gke09vqL
-1EHJNDZzSYddQyZ+4s7xw1gdSqMktSBcE6mIUdkWadeUc3wmonqddUEGdT3YTk0g
-BvI6YKq1MRRm1ymqDRW39v4iKfUeXmPJI4PxBgm/KYTbfotFt80m0Lld0zhtPo7h
-nQIDAQABo0UwQzAdBgNVHQ4EFgQUVEv9ZslmUUKZvVwqNk7+Epm/zjYwEgYDVR0T
-AQH/BAgwBgEB/wIBADAOBgNVHQ8BAf8EBAMCAQYwDQYJKoZIhvcNAQENBQADggIB
-AB+nrpRyQgmXDbV4f0fWkET07rI7+SIni8y0O34va4j3Bn5YVEHIZsnwv9X2kNMN
-EoONABt15pgJ3tWHnANi2M9SbisdJR7xFs/qkPswLKz/2Q9imwekEPW64T53t2Zg
-DjsK/1GNXA1HraadZxW/Ef7uJzlcugN6kQA5zmmkg+bbRntt63KpVrC9OXN0i6QS
-iKznG+mPaq7yIRLM09a3NR58eKslrbvpbah8Nj0jLrqvmcf2feCJKXJ9pQCzwU6X
-d8ZLdL4ft7VYO7c/8Xi/FB2vHGRHlP+d/6tpn83WV1cmH+K/3ZSBG2bM+TEl0Im0
-8pIZwhqcv4RVaZiPSgE+E9959QWAY5Buy7KyO7FXESP/fB9yzxJp09e4NEvWtEjf
-N4wAclHDrS6e5/e1wdJa0Wj5s7JoizmklCS8rOWeDLMHto0dONdAG2rYg+4nC0oQ
-bnnT4EHJgTEXuO/4aGls8fhkeejq9QVsqKxgKorf3g2mwhIX7HuI6GereJKEjBH0
-RpTbYQhmv7iVVum/S95hqig5UFoZFe5dOSRgYKLchNf8FOfOhETYrMlPZfNWcIU7
-HFlGA7bpO7ytbPyjvDNtJ5qUpVrm9+vusAB2Op1Nnc3/O4znr7MpspUti3te527V
-r22FXa6sTzRXrdE7NB89VW24+pvBcXnj8Es4R/qnQBYS
------END CERTIFICATE-----
-
-
-
-# 인증서를 파일로 저장
-$ kubectl -n kafka get secret my-cluster-cluster-ca-cert -o jsonpath='{.data.ca\.crt}' | base64 -d > ca.cart
-
-
-# 인증서 확인
-
-
-$ openssl s_client -connect bootstrap.kafka.ktcloud.211.254.212.105.nip.io:443 -CAfile ./ca.crt
-
-CONNECTED(00000003)
-depth=0 CN = TRAEFIK DEFAULT CERT
-verify error:num=18:self signed certificate
-verify return:1
-depth=0 CN = TRAEFIK DEFAULT CERT
-verify return:1
----
-Certificate chain
- 0 s:CN = TRAEFIK DEFAULT CERT
-   i:CN = TRAEFIK DEFAULT CERT
----
-Server certificate
------BEGIN CERTIFICATE-----
-MIIDXTCCAkWgAwIBAgIQJV8dv1IaXdAZmb8Np4P6izANBgkqhkiG9w0BAQsFADAf
-MR0wGwYDVQQDExRUUkFFRklLIERFRkFVTFQgQ0VSVDAeFw0yMjA2MjUxMTU0MjNa
-Fw0yMzA2MjUxMTU0MjNaMB8xHTAbBgNVBAMTFFRSQUVGSUsgREVGQVVMVCBDRVJU
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxrMp2HHiGJogLfh1+pcD
-TWmhxf48t7W6f278VSyU5mnt+v39L4ckiBqh4GYUo6OVzcHZIxri/khmY2vM5SKH
-MoO7pUk8us0otteBgHMZ9wEyiwhrR2t4yfzotjbiCR3thjYXsri7OINeRNaA4B0+
-xRD534BXvcKNITwwFwIzw3UCi5TeAclVSq9YEFn/Ffd1pMLsFWJqVySFbpGJEbHc
-4hv0eAYvnI9sCdQ4m61QKqe9IITel/SOliB56nBJqZ+OXL26kJl1rErOVzE0Q2xQ
-iThED+FfyO5BxA6UZaNOt3ZJOrzrKKMFoEn7Te4eZulwq9JzccRbu6xCGFQYFic0
-0QIDAQABo4GUMIGRMA4GA1UdDwEB/wQEAwIDuDATBgNVHSUEDDAKBggrBgEFBQcD
-ATAMBgNVHRMBAf8EAjAAMFwGA1UdEQRVMFOCUTZlMjgyNWQ4YWU3ZWYxYmY5OTVh
-YzMyNmQ1ZTlmOTBjLjZiMWZhZWZjZTA5ZTU2M2NjMGNjNzNhMzFhM2I0MDgzLnRy
-YWVmaWsuZGVmYXVsdDANBgkqhkiG9w0BAQsFAAOCAQEADQ2kn52CXfLVeBTTGFno
-3YPEMvvdaYOSUbw+trfvmDh0VEbIXrJpk+bnxOjCA01APenU2Y/Zz2Otr6wv66Lp
-ZbrV2kWWVx1tUMHRRAc/vF8LM0b5exnWACKhSM4VV5JW+wZKXJddQ4eWWfmWdy8u
-ICXZ51mKgqaVVnsbyM0y3DcLjOHjWOPMBF65oeq/njPVmArrI9F5NOE4U33mnH8o
-wTtgTlXSDRlvy1vFE0kLLCEdygaKdsizXw9vtG/Ftmg/CTfyhPczKlzdV52v9VX6
-2DRY5R3jQ0eFwICWX969Pb7/lM3yd2w/SgIUEFoGnx2ffxDgUcf0/w+83Obyydtf
-dw==
------END CERTIFICATE-----
-subject=CN = TRAEFIK DEFAULT CERT
-
-issuer=CN = TRAEFIK DEFAULT CERT
-
----
-No client certificate CA names sent
-Peer signing digest: SHA256
-Peer signature type: RSA-PSS
-Server Temp Key: X25519, 253 bits
----
-SSL handshake has read 1405 bytes and written 408 bytes
-Verification error: self signed certificate
----
-New, TLSv1.3, Cipher is TLS_AES_128_GCM_SHA256
-Server public key is 2048 bit
-Secure Renegotiation IS NOT supported
-Compression: NONE
-Expansion: NONE
-No ALPN negotiated
-Early data was not sent
-Verify return code: 18 (self signed certificate)
----
----
-Post-Handshake New Session Ticket arrived:
-SSL-Session:
-    Protocol  : TLSv1.3
-    Cipher    : TLS_AES_128_GCM_SHA256
-    Session-ID: 4F6FD6DC94BA71D608D4E1018E2D3791F0A33E52F1B5562FAD9D9A88B1DB8327
-    Session-ID-ctx:
-    Resumption PSK: 2A70438198C1CE669611E7D61EEB3C36F0CFB2005816C8F0207E1D0E4FCAFA8D
-    PSK identity: None
-    PSK identity hint: None
-    SRP username: None
-    TLS session ticket lifetime hint: 604800 (seconds)
-    TLS session ticket:
-    0000 - 58 50 88 c4 3c 9a c1 94-10 10 5c 91 88 96 37 7e   XP..<.....\...7~
-    0010 - 1c 93 7f f4 56 18 5e 4d-af 0c e5 d4 be 67 5b da   ....V.^M.....g[.
-    0020 - 74 d0 c1 b7 d8 54 fa bd-fe a9 19 b5 2c dd 89 24   t....T......,..$
-    0030 - 19 f5 47 f5 fc ff 35 3a-a0 d6 0c 77 74 45 74 4f   ..G...5:...wtEtO
-    0040 - 54 bf 24 6c ed 17 b0 da-fd 4b 3c a5 be da 49 1a   T.$l.....K<...I.
-    0050 - 3c 43 db 7b 7b f9 b3 bc-c5 15 5b 34 1c 79 9b 86   <C.{{.....[4.y..
-    0060 - ab 08 a5 b2 f4 6c b4 e1-a0 f9 24 d3 5b 77 67 b9   .....l....$.[wg.
-    0070 - f9                                                .
-
-    Start Time: 1656158950
-    Timeout   : 7200 (sec)
-    Verify return code: 18 (self signed certificate)
-    Extended master secret: no
-    Max Early Data: 0
----
-read R BLOCK
-
-HTTP/1.1 400 Bad Request
-Content-Type: text/plain; charset=utf-8
-Connection: close
-
-400 Bad Requestclosed
-
-
-
-
-
-
-
-```
-
-
-
-### (5) kafkacat로 확인 - 실패
-
-```sh
-$ kubectl -n kafka exec -it deploy/kafkacat -- bash
-
-```
-
-
-
-```sh
-
-## 참고
-host: bootstrap.kafka.ktcloud.211.254.212.105.nip.io
-host: broker-0.kafka.ktcloud.211.254.212.105.nip.io
-host: broker-1.kafka.ktcloud.211.254.212.105.nip.io
-host: broker-2.kafka.ktcloud.211.254.212.105.nip.io
-
-
-export BROKERS=bootstrap.kafka.ktcloud.211.254.212.105.nip.io:443
-export BROKERS="bootstrap.kafka.ktcloud.211.254.212.105.nip.io:443,broker-0.kafka.ktcloud.211.254.212.105.nip.io:443,broker-1.kafka.ktcloud.211.254.212.105.nip.io:443,broker-2.kafka.ktcloud.211.254.212.105.nip.io:443"
-export KAFKAUSER=my-user
-export PASSWORD=pprOnk80CDfo
-export TOPIC=my-topic
-export GROUP=my-topic-group
-
-
-## topic list
-kafkacat -b $BROKERS \
-   -X security.protocol=SASL_SSL \
-   -X sasl.mechanisms=SCRAM-SHA-512 \
-   -X sasl.username=$KAFKAUSER \
-   -X sasl.password=$PASSWORD \
-   -X ssl.ca.location=./ca.crt -L
-
-<-- 연결 실패
-% ERROR: Failed to acquire metadata: Local: Broker transport failure
-<-- 사유 : 주소인식이 안된경우, 인증서 실패, user/pass 실패  
-
-
-
-## producer
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -P -X acks=1
-<-- 성공
-
-
-## 파일의 내용을 보내기
-cat > msg.txt
-abcdefg
----
-
-## producer
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -P -X acks=1 msg.txt
-<-- 성공
-
-
-
-## Consumer
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -C
-<-- 성공
- 
- 
-## consumer 처음부터 읽어 확인할 경우
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -C -o beginning
-<-- 성공
-
-
-
-## Consumer Group-id
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -G $GROUP  -C
-<-- 성공
-
-```
-
-
-
-
-
-
-
-
-
-## 3) Openshift Route - no 인증
-
-참조링크: https://strimzi.io/blog/2019/04/30/accessing-kafka-part-3/
-
-
-
-### (1) Route 개념
-
-
-
-개별 브로커에 대한 액세스를 제공하기 위해 노드 포트에서 사용하는 것과 동일한 트릭을 사용하고 [이전 블로그 게시물](https://strimzi.io/2019/04/23/accessing-kafka-part-2.html) 에서 이미 설명했습니다 . 우리는 각 브로커를 위한 전용 서비스를 만듭니다. 이들은 개별 브로커를 직접 처리하는 데 사용됩니다. 그 외에도 클라이언트의 부트스트래핑을 위해 하나의 서비스도 사용할 것입니다. 이 서비스는 사용 가능한 모든 Kafka 브로커 간에 라운드 로빈됩니다.
-
-그러나 노드 포트를 사용할 때와 달리 이러한 서비스는 해당 `clusterIP`유형의 일반 Kubernetes 서비스일 뿐입니다. Strimzi Kafka 운영자는 `Route`이러한 각 서비스에 대한 리소스도 생성합니다. 그러면 HAProxy 라우터를 사용하여 노출됩니다. 이 경로에 할당된 DNS 주소는 Strimzi에서 다른 Kafka 브로커에서 보급된 주소를 구성하는 데 사용됩니다.
-
-
-
-
-
-![Accessing Kafka using per-pod routes](kafka.assets/2019-04-30-per-pod-routes.png)
-
-Kafka 클라이언트는 부트스트랩 서비스를 통해 브로커 중 하나로 라우팅하는 부트스트랩 경로에 연결합니다. 이 브로커에서 브로커별 경로의 DNS 이름을 포함하는 메타데이터를 가져옵니다. Kafka 클라이언트는 이 주소를 사용하여 특정 브로커 전용 경로에 연결합니다. 그리고 라우터는 해당 서비스를 통해 다시 올바른 포드로 라우팅합니다.
-
-이전 섹션에서 설명한 대로 라우터의 주요 사용 사례는 HTTP(S) 트래픽 라우팅입니다. 따라서 항상 포트 80 및 443에서 수신 대기합니다. Strimzi는 TLS 통과 기능을 사용하고 있으므로 다음을 의미합니다.
-
-- 포트는 HTTPS에 사용되는 포트로 항상 443입니다.
-- 트래픽은 **항상 TLS 암호화를 사용** 합니다.
-
-클라이언트와 연결할 주소를 얻는 것은 쉽습니다. 위에서 언급했듯이 포트는 항상 443입니다. 이것은 사용자가 443 대신 포트 9094에 연결하려고 할 때 종종 문제의 원인입니다. 그러나 443은 항상 OpenShift Routes에서 올바른 포트 번호입니다. 리소스 상태에서 호스트를 찾을 수 있습니다 ( 클러스터 이름으로 `Route`교체 ).`my-cluster`
-
-
-
-
-
-
-
-### (2) Kafka Cluster Route 등록
-
-```yaml
-## route 등록을 위한 listener 등록후 apply 수행
----
-apiVersion: kafka.strimzi.io/v1beta2
-kind: Kafka
-metadata:
-  name: sa-cluster
-  namespace: kafka
-  ...
-spec:
-  ...
-  kafka:
-    ...
-    listeners:
-      - name: plain
-        port: 9092
-        tls: false
-        type: internal
-      - name: tls
-        port: 9093
-        tls: true
-        type: internal
-        
-      ## route type 등록
-      - name: route
-        port: 9094
-        tls: true
-        type: route
-        
-      ## route type 등록2
-      - name: external
-        port: 9094
-        type: route
-        tls: true
-        authentication:
-          type: scram-sha-512  # 인증
-        configuration:
-          bootstrap:
-            host: bootstrap.kafka.apps.211-34-231-82.nip.io
-          brokers:
-          - broker: 0
-            host: broker-0.kafka.apps.211-34-231-82.nip.io
-          - broker: 1
-            host: broker-1.kafka.apps.211-34-231-82.nip.io
-          - broker: 2
-            host: broker-2.kafka.apps.211-34-231-82.nip.io
----
-
-```
-
- 
-
-
-
-
-
-
-
-
-
-
-
-### (3) 확인
-
-```sh
-
-## 확인
-$ kubectl -n kafka get route
-NAME                         HOST/PORT                                   PATH   SERVICES                              PORT   TERMINATION   WILDCARD
-my-cluster-kafka-0           broker-0.kafka.apps.211-34-231-82.nip.io           my-cluster-kafka-0                    9094   passthrough   None
-my-cluster-kafka-1           broker-1.kafka.apps.211-34-231-82.nip.io           my-cluster-kafka-1                    9094   passthrough   None
-my-cluster-kafka-2           broker-2.kafka.apps.211-34-231-82.nip.io           my-cluster-kafka-2                    9094   passthrough   None
-my-cluster-kafka-bootstrap   bootstrap.kafka.apps.211-34-231-82.nip.io          my-cluster-kafka-external-bootstrap   9094   passthrough   None
-
-	
-https://bootstrap.kafka.apps.211-34-231-82.nip.io
-
-## 접근가능한 route 4개 생성완료
-
-
-```
-
-
-
-
-
-
-
-
-
-### (4) 인증서 획득
-
-client 에서 사용할 인증서 획득 (인증서 기간은 1년)
-
-```sh
-## openshift 에서 인증서 획득
-$ oc -n kafka extract secret/my-cluster-cluster-ca-cert --keys=ca.crt  --to=-
------BEGIN CERTIFICATE-----
-MIIFLTCCAxWgAwIBAgIUQ+S6Q/I1Bbbgdkja3rdYpacOyOAwDQYJKoZIhvcNAQEN
-BQAwLTETMBEGA1UECgwKaW8uc3RyaW16aTEWMBQGA1UEAwwNY2x1c3Rlci1jYSB2
-MDAeFw0yMjA2MjUxMzUwMjlaFw0yMzA2MjUxMzUwMjlaMC0xEzARBgNVBAoMCmlv
-LnN0cmltemkxFjAUBgNVBAMMDWNsdXN0ZXItY2EgdjAwggIiMA0GCSqGSIb3DQEB
-AQUAA4ICDwAwggIKAoICAQCtWWBKQNMWXp7C3gyVnYG28qafYenI8wF747OEgE5x
-bShImZszJKsKBQbHQgUPtWMNbHTejpLrkIqS8/dcJMI61flpTyqDZYYTKWUOdEVH
-x0+hgsmcXd6pLCAdbEZ5vCSbOhEiGVuPFovq/pJGfOlFxpkSafhfWdJJ4EbwaJ7B
-soXxEfsvorak2TRutNEf52syStIfa8Jy42tbWVBS3viwwybvNUA3/vbqRxehJmzJ
-74oIRIumT0Qmgomte4gpn8rZGkd+pXrhRJ2v4nd5Ch9QAxUcBoBY9QbecG2/+RE3
-670cmVaF2r/BPgnpUt0iYOp44iJrsNo4SDR/XU27N0AHpK0DOVbLXK1ANet22JKj
-U5P0N92vLvJAUkevT7k2V7VSnBrU47TH57z260R4o1nO2mIunDpyZ7z4VQN/uPe6
-ISk1ldLmmNOkJ3E1rBSwsRIXJ8dyc0IOTLIuGF6XP/PCymTWzhKrOzaTmMRxtWes
-GwNTikzzxXzSM4iO6inemyGGtQi6/f5oc37O1YCFGsBTFvhAVzdcPcbFoJ6jdULm
-IWBv+GZsY6Hb6YsZQPZpz3HyTL4ArW5RRTjDbFKOPIR1FbxcnQQu3zxug1WQRc7U
-bRBp9YSaMVnjV9bK+ScMTx+hY1SkIPX2tuPbElh2UXpDhJDMEmYJU2VKXk0n7At1
-SwIDAQABo0UwQzAdBgNVHQ4EFgQUI9x2JoR/ajwKVxR4ba6KOR7DbvQwEgYDVR0T
-AQH/BAgwBgEB/wIBADAOBgNVHQ8BAf8EBAMCAQYwDQYJKoZIhvcNAQENBQADggIB
-AB6dnPQxtvhq/vfLjcMkET13GekbmpeOgBP32ke+n3xRW3/p3ORJdXXj+QZApKPj
-eKjRQmSwFfO1/2dWsUNqOx8+g4mugKMzVE/eJY6EkDmZwRaq9aYNBdsx39eaDSBB
-le0Sr0kXS2NU7n60v7v1yMr3od6IPNMwoBHi0BtqcX5bGFixjPtafbWKhDovWmLC
-7P3lFtsQ6yLMyVj/e6lhpO0rAcwTNTnf2zZ1/qzQKwIoCUr7XSismpRBjWxPa/wi
-sTjUqWylVQlWVZVdXpWUW+Rz2gUPlKO9fzx0PtothuJsXPg7JIEI20jSzu3aASjR
-UdlhDtR9U/0ASkjmgiYxkBNBJANro72muVKVCgdZg1GB9m269iQmTwm1ATIxnIbu
-IJUCcumDwBq239NC2d1DUfwhFB9YMg62mSzCIZTi/ZeNPZl0Z/vGSQ4PMZbKivF7
-UkHS61RyNfNE1Ryp0ekczBqlP/lfwFQgMdTEHwtuVkx4ACzyg/x2Zqt0egTpkhea
-seErJA/woM8XouwgBJKpSdOyEcAQNP2o7F2hKvDiy3e0N6tbHUJ8sWCbBxSEP+yl
-ikkaEPRxXKjSibe/HfYkLEBfjBeFfSmmTXApOR/+ZJeTIPtZgnRDKwxAkXiJo5r/
-wmzsXFUgChPN9wnJYUQzhW+lwWaJc5ZXJmtzNokAH6fx
------END CERTIFICATE-----
-
-# 인증서를 파일로 저장
-$ oc -n kafka extract secret/my-cluster-cluster-ca-cert --keys=ca.crt  --to=- > ca.crt
-
-
-```
-
-
-
-
-
-### (5) kafkacat로 확인
-
-kafkacat 을 실행한다.
-
-docker 를 이용하든 아니면 kubernetes 내에서 실행하든 상관없다.  본인이 편한것으로 진행하자. 
-
-```sh
-$ docker run --name kafkacat -d --rm --user root confluentinc/cp-kafkacat:latest sleep 365d
-
-or
-
-$ kubectl -n kafka exec -it deploy/kafkacat -- bash
-
-```
-
-
-
-
-
-```sh
-
-
-## 참고
-host: bootstrap.kafka.apps.211-34-231-82.nip.io
-host: broker-0.kafka.apps.211-34-231-82.nip.io
-host: broker-1.kafka.apps.211-34-231-82.nip.io
-host: broker-2.kafka.apps.211-34-231-82.nip.io
-
-
-## nodeport 로 확인
-export BROKERS=bootstrap.kafka.apps.211-34-231-82.nip.io:443 \
-broker-0.kafka.apps.211-34-231-82.nip.io:443,\
-broker-1.kafka.apps.211-34-231-82.nip.io:443,\
-broker-2.kafka.apps.211-34-231-82.nip.io:443
-
-
-
-export BROKERS=bootstrap.kafka.apps.211-34-231-82.nip.io:443
-export KAFKAUSER=my-user
-export PASSWORD=KV9tDU0AY4Wu
-export TOPIC=my-topic
-
- 
-  
-## topic list
-kafkacat -b $BROKERS \
-   -X security.protocol=SASL_SSL \
-   -X sasl.mechanisms=SCRAM-SHA-512 \
-   -X sasl.username=$KAFKAUSER \
-   -X sasl.password=$PASSWORD \
-   -X ssl.ca.location=./ca.crt -L
-
-Metadata for all topics (from broker -1: sasl_ssl://bootstrap.kafka.apps.211-34-231-82.nip.io:443/bootstrap):
- 3 brokers:
-  broker 0 at broker-0.kafka.apps.211-34-231-82.nip.io:443
-  broker 2 at broker-2.kafka.apps.211-34-231-82.nip.io:443
-  broker 1 at broker-1.kafka.apps.211-34-231-82.nip.io:443 (controller)
- 1 topics:
-  topic "my-topic" with 3 partitions:
-    partition 0, leader 0, replicas: 0, isrs: 0
-    partition 1, leader 2, replicas: 2, isrs: 2
-    partition 2, leader 1, replicas: 1, isrs: 1
-
-
-## producer
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -P -X acks=1
-
-
-## Consumer
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -C
-
-
-```
-
-
-
-
-
-## 9) kafkacat 추가
-
-
-
-### 1) docker run
-
-```
-docker login nexus.dspace.kt.co.kr -u icistr-cmmn-readonly -p icis1234
-
-docker pull nexus.dspace.kt.co.kr/confluentinc/cp-kafkacat:latest
-
-docker run --name kafkacat -d --user root nexus.dspace.kt.co.kr/confluentinc/cp-kafkacat:latest sleep 365d
-
-docker run --name kafkacat -d --user root confluentinc/cp-kafkacat:latest sleep 365d
-
-```
-
-
-
-### 2) pub/sub 확인
-
-```sh
-
-export BROKERS=bootstrap.211.254.212.105.nip.io:443
-export TOPIC=my-topic
-export GROUP=my-topic-group
-
-  
-## topic list
-kafkacat -b $BROKERS \
-  -X security.protocol=SSL \
-  -X ssl.ca.location=./ca.crt \
-  -L
-
-
-## producer
-kafkacat -b $BROKERS \
-  -X security.protocol=SSL \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -P -X acks=1
-<-- 성공
-
-
-
-
-## Consumer
-kafkacat -b $BROKERS \
-  -t $TOPIC -C -o beginning
-
-## Consumer Group-id
-kafkacat -b $BROKERS \
-  -t $TOPIC -G $GROUP  -C
-<-- 성공
-
-
----
-## topic list
-kafkacat -b $BROKERS \
-   -X security.protocol=SSL \
-   -X ssl.ca.location=./ca.crt \
-   -L
-
-<-- 성공
-% ERROR: Failed to acquire metadata: Local: Broker transport failure   <-- 주소인식이 안된경우
-
-
-
-## producer
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -P -X acks=1
-<-- 성공
-
-
-## 파일의 내용을 보내기
-cat > msg.txt
-abcdefg
----
-
-## producer
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -P -X acks=1 msg.txt
-<-- 성공
-
-
-
-## Consumer
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -C
-<-- 성공
- 
- 
-## consumer 처음부터 읽어 확인할 경우
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -C -o beginning
-<-- 성공
-
-
-
-## Consumer Group-id
-kafkacat -b $BROKERS \
-  -X security.protocol=SASL_SSL \
-  -X sasl.mechanisms=SCRAM-SHA-512 \
-  -X sasl.username=$KAFKAUSER \
-  -X sasl.password=$PASSWORD \
-  -X ssl.ca.location=./ca.crt \
-  -t $TOPIC -G $GROUP  -C
-<-- 성공
-
-```
-
-
-
-
-
-
-
-
-
-
-
-# 8. Monitoring
+# 8. Monitoring[실습Skip]
 
 모니터링이 필요할 경우 exporter 를 설치후 promtheus와 연동할 수 있다. 
 
@@ -2433,55 +1720,62 @@ http://grafana.kafka.ktcloud.211.254.212.105.nip.io/d/jwPKIsniz/strimzi-kafka-ex
 
 
 
-# 9. python 실습
+# 9. [실습] python
 
-아래 설명은 nodeport 기준이다.
+python 을 활용하여 kafka 연결을 시도해 보자. 
+
+PRD 환경처럼 Cluster 내부에서 연결되는 Internal 환경과  DEV 환경처럼 개발자가 Local PC 에서 연결되는 External 환경을 각각 살펴보자.
 
 
 
-## 1) 준비
+## 1) Internal Access
 
-### (1) python
+
+
+### (1) 준비
 
 #### Internal access 를 위한 Cluter python 실행
 
 ```sh
 ## cluster 에서 실행
-# deploy
+# python deploy
 $ kubectl -n kafka create deploy python --image=python:3.9 -- sleep 365d
 
-# python 실행
+
+
+# python pod 확인
+$ kubectl -n kafka get pod
+NAME                                         READY   STATUS    RESTARTS       AGE
+...
+python-fb57f7bd4-4w6pz                       1/1     Running   0              32s
+...
+
+
+
+# python pod 내 진입(bash 실행)
 $ kubectl -n kafka exec -it deploy/python -- bash
 
-
 ```
 
 
 
-#### External access 를 위한 docker python 실행
+#### python library install
 
-```sh
-## docker 실행
-$ docker run --name python --user root --rm -d python:3.9 sleep 365d
-
-# python 실행
-$ docker exec -it python -- bash
-
-```
-
-
-
-### (2) python library install
-
-python 을 이용해서kafka 에 접근하기 위해서는 kafka 가아닌 kafka-python 을 설치해야 한다.
+kafka 에 접근하기 위해서 kafka-python 을 설치해야 한다.
 
 ```bash
-pip install kafka-python
+$ pip install kafka-python
+
+Collecting kafka-python
+  Downloading kafka_python-2.0.2-py2.py3-none-any.whl (246 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 246.5/246.5 KB 3.9 MB/s eta 0:00:00
+Installing collected packages: kafka-python
+Successfully installed kafka-python-2.0.2
 ```
 
 
 
-### (3) kafka host 확인
+#### kafka host 확인
 
 ```sh
 
@@ -2491,16 +1785,78 @@ broker0: my-cluster-kafka-0.my-cluster-kafka-brokers.kafka.svc:9092
 broker2: my-cluster-kafka-2.my-cluster-kafka-brokers.kafka.svc:9092
 broker1: my-cluster-kafka-1.my-cluster-kafka-brokers.kafka.svc:9092 
 
-## external 접근을 위한 host (nodeport 기준)
-bootstrap: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100
-broker0: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32000
-broker1: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32001
-broker2: my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32002
-
 ## 인증값
 export KAFKAUSER=my-user
-export PASSWORD=pprOnk80CDfo
+export PASSWORD=eGVNg7ZvPbi0
 export TOPIC=my-topic
+```
+
+
+
+
+
+### (2) consumer
+
+consumer 실행을 위해서 python cli 환경으로 들어가자.
+
+```sh
+$ python
+
+Python 3.9.13 (main, May 28 2022, 13:56:03)
+[GCC 10.2.1 20210110] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>>
+
+```
+
+
+
+internal 에서 접근시에는 인증서가 없는  9092 port 접근이므로 사용되는 protocol은 SASL_PLAINTEXT 이다.
+
+```python
+from kafka import KafkaConsumer
+
+# 개인환경으로 변경
+bootstrap_servers='my-cluster-kafka-bootstrap.kafka.svc:9092'
+sasl_plain_password='eGVNg7ZvPbi0'
+
+consumer = KafkaConsumer(bootstrap_servers=bootstrap_servers,
+                        security_protocol="SASL_PLAINTEXT",
+                        sasl_mechanism='SCRAM-SHA-512',
+                        sasl_plain_username='my-user',
+                        sasl_plain_password=sasl_plain_password,    # 개인별 password 로 변경하자.
+                        auto_offset_reset='earliest',
+                        enable_auto_commit= True,
+                        group_id='my-topic-group')
+
+
+
+# my-user로 확인가능한 topic 목록들을 확인할 수 있다.
+consumer.topics()
+
+# 사용할 topic 지정(구독)
+consumer.subscribe("my-topic")
+
+# 구독 확인
+consumer.subscription()
+
+
+# 메세지 읽기
+for message in consumer:
+   print("topic=%s partition=%d offset=%d: key=%s value=%s" %
+        (message.topic,
+          message.partition,
+          message.offset,
+          message.key,
+          message.value))
+
+
+
+'''
+topic=my-topic partition=0 offset=38: key=None value=b'{"eventName":"a","num":88,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }'
+topic=my-topic partition=0 offset=39: key=None value=b'{"eventName":"a","num":90,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }'
+topic=my-topic partition=0 offset=40: key=None value=b'{"eventName":"a","num":96,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }'
+'''
 ```
 
 
@@ -2509,27 +1865,54 @@ export TOPIC=my-topic
 
 
 
-## 2) producer
+### (3) producer
+
+producer 실행을 위해서 별도의 terminal 을 실행한 후 python cli 환경으로 들어가자.
+
+```sh
+# python pod 내 진입(bash 실행)
+$ kubectl -n kafka exec -it deploy/python -- bash
+
+
+$ python
+
+Python 3.9.13 (main, May 28 2022, 13:56:03)
+[GCC 10.2.1 20210110] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>>
+
+```
 
 
 
 
-
-### (1) Internal Access
 
 internal 에서 접근시에는 인증서가 없는  9092 port 접근이므로 사용되는 protocol은 SASL_PLAINTEXT 이다.
 
 ```python
 from kafka import KafkaProducer
+from time import sleep
 
-producer = KafkaProducer(bootstrap_servers='my-cluster-kafka-bootstrap.kafka.svc:9092',
+# 개인환경으로 변경
+bootstrap_servers='my-cluster-kafka-bootstrap.kafka.svc:9092'
+sasl_plain_password='eGVNg7ZvPbi0'
+
+producer = KafkaProducer(bootstrap_servers=bootstrap_servers,
                         security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
                         sasl_plain_username='my-user',
-                        sasl_plain_password='pprOnk80CDfo')
+                        sasl_plain_password=sasl_plain_password)
     
+producer.send('my-topic', b'python test1')
 producer.send('my-topic', b'python test2')
-producer.send('my-topic', b'python test3')
+producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % 1)
+
+
+for i in range(10000):
+    print(i)
+    sleep(1)
+    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
+
 
 ```
 
@@ -2538,99 +1921,130 @@ producer.send('my-topic', b'python test3')
 - 대량 발송(성능테스트)
 
 ```python
-# 20만건 테스트
-for i in range(100000):
+
+# 만건 테스트
+import time
+start_time = time.time() # 시작시간
+for i in range(10000):
     print(i)
     producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
 
 
-
-# 20만건 테스트
-for i in range(300000, 600000):
-    print(i)
-    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
+end_time = time.time() # 종료시간
+print("duration time :", end_time - start_time)  # 현재시각 - 시작시간 = 실행 시간
+# duration time : 19.56832265853882
 
 
 ```
 
 
 
-### (2) External Access
-
-Nodeport 설정에는 인증서가 불필요한 SASL_PLAINTEXT 이다.
-
-```python
-from kafka import KafkaProducer
-
-producer = KafkaProducer(bootstrap_servers='my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100',
-                        security_protocol="SASL_PLAINTEXT",
-                        sasl_mechanism='SCRAM-SHA-512',
-                        ssl_check_hostname=True,
-                        sasl_plain_username='my-user',
-                        sasl_plain_password='pprOnk80CDfo')
-                        
-producer.send('my-topic', b'python test2')
-producer.send('my-topic', b'python test3')
-
-producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % 1)
-
-
-```
-
-
-
-- 대량테스트
+- 참고
 
 ```python
 
-# 대량 테스트
-for i in range(20):
+# 2만건 테스트
+for i in range(10001, 20000):
     print(i)
     producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
-
-
-# 대량 테스트2
-for i in range(300000, 600000):
-    print(i)
-    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
-
     
 ```
 
-- tps 비교
-  - internal : 1.5k TPS
-  - external : 1.7k TPS
 
-- 결론
-  - 당연한 내용이지만 internal 이  external 보다 조금 더 정도 빠름
+
+- python 종료시 : Ctrl+D 
 
 
 
 
 
+## 2) External Access
 
-## 3) consumer
 
-### (1) Internal Access
+
+### (1) 준비
+
+#### External access 를 위한 docker python 실행
+
+```sh
+## docker 실행
+$ docker run --name python --user root --rm -d python:3.9 sleep 365d
+
+# python 실행
+$ docker exec -it python bash
+
+```
+
+
+
+#### python library install
+
+python 을 이용해서 kafka 에 접근하기 위해서는 kafka 가아닌 kafka-python 을 설치해야 한다.
+
+```bash
+$ pip install kafka-python
+```
+
+
+
+#### kafka host 확인
+
+```sh
+## external 접근을 위한 host (nodeport 기준)
+my-cluster.kafka.localhost.192.168.31.1.nip.io:32100
+
+## 인증값
+export KAFKAUSER=my-user
+export PASSWORD=eGVNg7ZvPbi0
+export TOPIC=my-topic
+```
+
+
+
+
+
+### (3) consumer
+
+consumer 실행을 위해서 python cli 환경으로 들어가자.
+
+```sh
+$ python
+
+Python 3.9.13 (main, May 28 2022, 13:56:03)
+[GCC 10.2.1 20210110] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>>
+
+```
+
+
+
+internal 에서 접근시에는 인증서가 없는  9092 port 접근이므로 사용되는 protocol은 SASL_PLAINTEXT 이다.
 
 ```python
 from kafka import KafkaConsumer
 
-consumer = KafkaConsumer(bootstrap_servers='my-cluster-kafka-bootstrap.kafka.svc:9092',
+# 개인환경으로 변경
+bootstrap_servers='my-cluster.kafka.localhost.192.168.31.1.nip.io:32100'
+sasl_plain_password='eGVNg7ZvPbi0'
+
+consumer = KafkaConsumer(bootstrap_servers=bootstrap_servers,
                         security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
                         sasl_plain_username='my-user',
-                        sasl_plain_password='pprOnk80CDfo',
+                        sasl_plain_password=sasl_plain_password,
+                        ssl_check_hostname=True,
                         auto_offset_reset='earliest',
                         enable_auto_commit= True,
                         group_id='my-topic-group')
 
-# topic 확인
+# my-user로 확인가능한 topic 목록들을 확인할 수 있다.
 consumer.topics()
-# {'my-topic', 'my-topic3'}
 
 # 사용할 topic 지정(구독)
 consumer.subscribe("my-topic")
+
+# 구독 확인
 consumer.subscription()
 
 
@@ -2653,54 +2067,93 @@ topic=my-topic partition=0 offset=40: key=None value=b'{"eventName":"a","num":96
 
 
 
-### (2) External Access
+
+
+
+
+### (2) producer
+
+Nodeport 설정에는 인증서가 불필요한 SASL_PLAINTEXT 이다.
 
 ```python
-from kafka import KafkaConsumer
+from kafka import KafkaProducer
+from time import sleep
 
-consumer = KafkaConsumer(bootstrap_servers='my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100',
+# 개인환경으로 변경
+bootstrap_servers='my-cluster.kafka.localhost.192.168.31.1.nip.io:32100'
+sasl_plain_password='eGVNg7ZvPbi0'
+
+producer = KafkaProducer(bootstrap_servers=bootstrap_servers,
                         security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
-                        sasl_plain_username='my-user',
-                        sasl_plain_password='pprOnk80CDfo',
                         ssl_check_hostname=True,
-                        auto_offset_reset='earliest',
-                        enable_auto_commit= True,
-                        group_id='my-topic-group')
+                        sasl_plain_username='my-user',
+                        sasl_plain_password=sasl_plain_password)
+                  
+producer.send('my-topic', b'python test1')
+producer.send('my-topic', b'python test2')
+producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % 1)
 
-# topic 확인
-consumer.topics()
-# {'my-topic'}
 
-# 사용할 topic 지정(구독)
-consumer.subscribe("my-topic")
-consumer.subscription()    
-## {'sa-edu-topic-01'}
+for i in range(10000):
+    print(i)
+    sleep(1)
+    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
 
-# 메세지 읽기
-for message in consumer:
-   print("topic=%s partition=%d offset=%d: key=%s value=%s" %
-        (message.topic,
-          message.partition,
-          message.offset,
-          message.key,
-          message.value))
-
-'''
----
-topic=my-topic partition=0 offset=38: key=None value=b'{"eventName":"a","num":88,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }'
-topic=my-topic partition=0 offset=39: key=None value=b'{"eventName":"a","num":90,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }'
-topic=my-topic partition=0 offset=40: key=None value=b'{"eventName":"a","num":96,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }'
-'''
 ```
 
 
 
+- 대량 발송(성능테스트)
+
+```python
+# 만건 테스트
+import time
+start_time = time.time() # 시작시간
+for i in range(10000):
+    print(i)
+    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
 
 
-## 4) Consumer Group 
+end_time = time.time() # 종료시간
+print("duration time :", end_time - start_time)  # 현재시각 - 시작시간 = 실행 시간
+# duration time : 20.996120929718018
 
-### 1) List 
+
+```
+
+- tps 비교
+  - internal : 1.5k TPS
+  - external : 1.7k TPS
+- 결론
+  - 일반적으로 External 이 Internal 보다 network 부하가 심해서 속도가 훨씬 느리다.
+  - 하지만 우리가 테스트한 환경은 동일 PC 에서 실행하므로 속도가 거의 동일한점을 참고하자.
+
+
+
+- 참고
+
+```python
+# 2만건 테스트
+for i in range(10001, 20000):
+    print(i)
+    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
+    
+```
+
+
+
+- python 종료시 : Ctrl+D 
+
+
+
+
+
+
+
+### (4) Consumer Group 
+
+#### 1) List 
 
 namesapce 를 보내서 CG list 리턴
 
@@ -2709,53 +2162,28 @@ namesapce 를 보내서 CG list 리턴
 ```python
 from kafka.admin import KafkaAdminClient
 
-admin_client = KafkaAdminClient(bootstrap_servers="sa-cluster-kafka-bootstrap.kafka-system-system.svc:9092", 
+# 개인환경으로 변경
+bootstrap_servers='my-cluster.kafka.localhost.192.168.31.1.nip.io:32100'
+sasl_plain_password='eGVNg7ZvPbi0'
+
+admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers, 
                         security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
-                        sasl_plain_username='order-user',
-                        sasl_plain_password='Kfix1IkttbDa',
+                        sasl_plain_username='my-user',
+                        sasl_plain_password=sasl_plain_password,
                         #client_id='test1'
                         )
 
 list_cg = admin_client.list_consumer_groups()
 print(type(list_cg))
 print(list_cg )
+# [('my-topic-group', 'consumer')]
 
-'''
----
-python getConsumerGroupList.py
----
-<class 'list'>
-[
- ('console-consumer-78969', 'consumer'), 
- ('console-consumer-12890', 'consumer'), 
- ('console-consumer-52141', 'consumer'), 
- ('order-consumer-group', 'consumer'),
- ('order-consumer-group2','consumer')
-]
----
-[
-('order-group-cons2', 'consumer'), 
-('console-consumer-76018', 'consumer')
-]
-
-  <-- 오케이 잘된다.
-'''
 ```
 
-- 주의사항
-  - list_consumer_groups 함수는 Kafka에 offset을 저장한 Consumer Group 만 리턴한다. 그룹만 추가되었다고 해서 조회되지는 않는다.  그러므로 list로 조회되려면 사실상 아래와 같이 3단계가 지나야 한다.
-    - 그룹생성
-    - 구독
-    - 첫1회 consuming
-  - 그러므로 위 3단계를 그룹추가 로직에 포함시켜야 한다.
-  - 리턴되는 튜블중 두번째 인자는 consumer group protocol type 이다.
 
 
-
-
-
-### 2) Describe
+#### 2) Describe
 
 CG 명을 던져서 topicname, partition, current-offset 이 리턴되어야 한다.
 
@@ -2770,92 +2198,79 @@ CG 명을 던져서 topicname, partition, current-offset 이 리턴되어야 한
 ```python
 from kafka.admin import KafkaAdminClient
 
-# external
-admin_client = KafkaAdminClient(bootstrap_servers='sa-cluster-kafka-route-bootstrap-kafka-system.apps.ktis-console.c01-okd4.cz-tb.paas.kt.co.kr:443',
-                         security_protocol="SASL_SSL",
-                        sasl_mechanism='SCRAM-SHA-512',
-                        sasl_plain_username='sa-edu-user',
-                        sasl_plain_password='V1QEY60gW4lE',
-                        ssl_check_hostname=True,
-                        ssl_cafile='./ca.crt'
-                        )
+# 개인환경으로 변경
+bootstrap_servers='my-cluster.kafka.localhost.192.168.31.1.nip.io:32100'
+sasl_plain_password='eGVNg7ZvPbi0'
 
-# internal
-admin_client = KafkaAdminClient(bootstrap_servers="sa-cluster-kafka-bootstrap.kafka-system.svc:9092", 
+admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers, 
                         security_protocol="SASL_PLAINTEXT",
                         sasl_mechanism='SCRAM-SHA-512',
-                        sasl_plain_username='sa-edu-user',
-                        sasl_plain_password='V1QEY60gW4lE',
+                        sasl_plain_username='my-user',
+                        sasl_plain_password=sasl_plain_password,
                         #client_id='test1'
                         )
 
 # 그룹명을 인수로 보낼때는 반드시 리스트[] 로 보내야 한다.
-cg_desc = admin_client.describe_consumer_groups(['sa-edu-group-01'])
+cg_desc = admin_client.describe_consumer_groups(['my-topic-group'])
 print(type(cg_desc))
 print(cg_desc)
-print('')
+
+'''
+[
+GroupInformation(
+error_code=0, 
+group='my-topic-group', 
+state='Stable', 
+protocol_type='consumer', 
+protocol='range', 
+members=[MemberInformation(member_id='kafka-python-2.0.2-06e95b4b-6f67-467d-ac8e-64c34710c5a2', 
+client_id='kafka-python-2.0.2', 
+client_host='/192.168.65.3', 
+member_metadata=ConsumerProtocolMemberMetadata(version=0, subscription=['my-topic'], user_data=b''), 
+member_assignment=ConsumerProtocolMemberAssignment(version=0, 
+assignment=[(topic='my-topic', partitions=[0, 1, 2])], 
+user_data=b''))], 
+authorized_operations=None)
+]
+'''
+
+
 
 # offset 정보
-cg_offsets = admin_client.list_consumer_group_offsets('sa-edu-group-01')
+cg_offsets = admin_client.list_consumer_group_offsets('my-topic-group')
 print(type(cg_offsets))
 print(cg_offsets)
 
-
 '''
-
-<class 'list'>
-[
-GroupInformation(error_code=0, group='sa-edu-group-01', state='Stable', 
-protocol_type='consumer', protocol='range', 
-members=[MemberInformation(member_id='kafka-python-2.0.2-92366493-3d61-4b74-bac4-6245b7ffae37', 
-client_id='kafka-python-2.0.2', client_host='/10.130.2.2', 
-member_metadata=ConsumerProtocolMemberMetadata(version=0, subscription=['sa-edu-topic-01'], user_data=b''), 
-member_assignment=ConsumerProtocolMemberAssignment(version=1, assignment=[(topic='sa-edu-topic-01', partitions=[2])], 
-user_data=None)), 
-MemberInformation(member_id='consumer-sa-edu-group-01-2-4eec207f-6467-45df-9806-aa9955a1ff52', 
-client_id='consumer-sa-edu-group-01-2', client_host='/10.129.2.2', 
-member_metadata=ConsumerProtocolMemberMetadata(version=1, subscription=['sa-edu-topic-01'], user_data=None), 
-member_assignment=ConsumerProtocolMemberAssignment(version=1, assignment=[(topic='sa-edu-topic-01', partitions=[0, 1])], 
-user_data=None))], 
-authorized_operations=None)
-]
-
-<class 'dict'>
 {
-TopicPartition(topic='sa-edu-topic-01', partition=0): OffsetAndMetadata(offset=736, metadata=''), 
-TopicPartition(topic='sa-edu-topic-01', partition=2): OffsetAndMetadata(offset=619, metadata=''), 
-TopicPartition(topic='sa-edu-topic-01', partition=1): OffsetAndMetadata(offset=639, metadata='')
+TopicPartition(topic='my-topic', partition=0): OffsetAndMetadata(offset=13449, metadata=''), 
+TopicPartition(topic='my-topic', partition=1): OffsetAndMetadata(offset=13534, metadata=''), 
+TopicPartition(topic='my-topic', partition=2): OffsetAndMetadata(offset=13151, metadata='')
 }
-
-
 '''
+
 ```
 
 
 
+### (5) kafka admin Client
 
-
-
-### 3) Delete
-
-- CG 삭제
-  kafka native 나 bridge 를 통해서 삭제기능을 제공하지 않는다.
-  그러므로 shell 을 통해서만 가능하다.
-
-
-
-
-
-
-## 5) kafka admin Client
-
-
-
-- topic 생성
+- topic 생성시
 
 ```python
 from kafka.admin import KafkaAdminClient, NewTopic
-admin_client = KafkaAdminClient(bootstrap_servers="sa-cluster-kafka-bootstrap.kafka-system.svc:9092", client_id='test')
+
+# 개인환경으로 변경
+bootstrap_servers='my-cluster.kafka.localhost.192.168.31.1.nip.io:32100'
+sasl_plain_password='eGVNg7ZvPbi0'
+
+admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers, 
+                        security_protocol="SASL_PLAINTEXT",
+                        sasl_mechanism='SCRAM-SHA-512',
+                        sasl_plain_username='my-user',
+                        sasl_plain_password=sasl_plain_password,
+                        #client_id='test1'
+                        )
 
 topic_list = []
 topic_list.append(NewTopic(name="example_topic", num_partitions=1, replication_factor=1))
@@ -2872,9 +2287,13 @@ python kafkaAdminClient.py
 
 
 
+
+
+
+
 # 9.  [실습] Java - SCS
 
-Spring Cloud Stream 를 이용한 샘플을 살펴볼 것이다.
+Spring Cloud Stream 를 이용한 샘플을 살펴보자.
 
 - Spring Cloud Stream 특징
 
@@ -2884,7 +2303,7 @@ Spring Cloud Stream 를 이용한 샘플을 살펴볼 것이다.
 
   - Spring 에서 Configuration 설정을 알아서 설정함
 
-  - 매우 매우 심플한 사용
+  - 매우 심플한 사용
 
 
 
@@ -3136,173 +2555,6 @@ while true; do curl -X POST http://localhost:8081/create \
 
 
 
-
-
-
-
-# 9.  [실습] Java - Spring Batch Kafka
-
-
-
-실습 내용설명
-
-
-
-```
-customer dto 의 모습으로 받아서 name 을 대문자로 변경한후 edu-topic-01-out 로 넘긴다.
-
-edu-topic-01 에서 받아서
-
-edu-topic-01-out  로 넘긴다.
-
-```
-
-
-
-## 1) data 준비
-
-### (1) producer 
-
-```python
-from kafka import KafkaProducer
-
-producer = KafkaProducer(bootstrap_servers='my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100',
-                        security_protocol="SASL_PLAINTEXT",
-                        sasl_mechanism='SCRAM-SHA-512',
-                        ssl_check_hostname=True,
-                        sasl_plain_username='my-user',
-                        sasl_plain_password='pprOnk80CDfo')
-                        
-    
-producer.send('edu-topic-01', b'python test3')
-
-producer.send('edu-topic-01', b'{"id":%d, "name": "song" }' % 1)
-
-
-
-
-# 대량 테스트
-for i in range(20):
-    print(i)
-    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
-
-```
-
-
-
-
-
-### 
-
-### (2) consumer
-
-```python
-from kafka import KafkaConsumer
-
-consumer = KafkaConsumer(bootstrap_servers='my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100',
-                        security_protocol="SASL_PLAINTEXT",
-                        sasl_mechanism='SCRAM-SHA-512',
-                        sasl_plain_username='my-user',
-                        sasl_plain_password='pprOnk80CDfo',
-                        ssl_check_hostname=True,
-                        auto_offset_reset='earliest',
-                        enable_auto_commit= True,
-                        group_id='edu-topic-01-group')
-
-# topic 확인
-consumer.topics()
-# {'my-topic'}
-
-# 사용할 topic 지정(구독)
-consumer.subscribe("edu-topic-01")
-consumer.subscription()    
-## {'sa-edu-topic-01'}
-
-# 메세지 읽기
-for message in consumer:
-   print("topic=%s partition=%d offset=%d: key=%s value=%s" %
-        (message.topic,
-          message.partition,
-          message.offset,
-          message.key,
-          message.value))
-```
-
-
-
-```
-class java.lang.String cannot be cast to class com.ssongman.Customer 
-
-
-
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-```
-
-
----
-apiVersion: kafka.strimzi.io/v1beta2
-kind: KafkaTopic
-metadata:
-  labels:
-    strimzi.io/cluster: my-cluster
-  name: edu-topic-01-out
-  namespace: kafka
-spec:
-  config:
-    retention.ms: 7200000
-  partitions: 3
-  replicas: 3
-  topicName: edu-topic-01-out
----
-
-
-$ kubectl apply -f - <<EOF
-apiVersion: kafka.strimzi.io/v1beta2
-kind: KafkaTopic
-metadata:
-  labels:
-    strimzi.io/cluster: my-cluster
-  name: edu-topic-01
-  namespace: kafka
-spec:
-  config:
-    retention.ms: 7200000
-  partitions: 3
-  replicas: 3
-  topicName: edu-topic-01
-EOF
----
-
-
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
  
 
 # 10. [데모]Consumer Rebalancing Round Test
@@ -3323,46 +2575,73 @@ EOF
 
 ## 1) 시나리오1 
 
-- 설명 
+### (1) 설명 
 
-o  Partition 3개인 Topic 에서 Consumer 갯수에 따른 변화사항 보기
+- Partition 3개인 Topic 에서 Consumer 갯수에 따른 변화사항 보기
 
-o  원할한 테스트를 위해서 python console 로 수행 한다.
+- 원할한 테스트를 위해서 python console 로 수행 한다.
 
-- Consumer 환경 
+### (2) Consumer 환경 
 
-- - Consumer1:  python
-  - Consumer2:  python
-  - Consumer3:  python
+- Consumer1:  python
 
-- 테스트 절차 
+- Consumer2:  python
 
-- - Consumer 1개로 처리 되는 현상 보기 
+- Consumer3:  python
 
-  - - 예상되는 결과: 1개의 Consumer 가 3개의 partition 을 모두 처리한다.
+### (3) 테스트 절차 
 
-  - Consumer 2일때 
+- Consumer 1개로 처리 되는 현상 보기 
+  - 예상되는 결과: 1개의 Consumer 가 3개의 partition 을 모두 처리한다.
 
-  - - 예상되는 결과: 1번 Consumer 가 partition 1개를 , 2번 Consumer 가 partition 2개 를 처리한다.·
+- Consumer 2일때 
+  - 예상되는 결과: 1번 Consumer 가 partition 1개를 , 2번 Consumer 가 partition 2개 를 처리한다.·
 
-- - Consumer  3일때 
-
-  - - 예상된는 결과: Consumer 와 partition 이 1:1 매핑되어 처리된다. 가장 이상적인 구조이다.
+- Consumer  3일때 
+  - 예상된는 결과: Consumer 와 partition 이 1:1 매핑되어 처리된다. 가장 이상적인 구조이다.
 
  
 
 ## 2) 시나리오2
 
-- 설명 
+### (1) 설명 
 
 - - 위 시나리오1번 에서 Consumer 종류를 다양하게 수행한다.
 
-- Consumer 환경     
+### (2) Consumer 환경     
+- Consumer1:  Spring boot
+- Consumer2: python
+- Consumer3: python
 
-- - Consumer1:      Spring boot
-  - Consumer2:      python
-  - Consumer3:      python
+### (3) 테스트 절차
+- 위와 동일
 
-- 테스트 절차
 
-- - 위와 동일
+
+
+
+# 11. Strimzi Clean up
+
+
+
+```sh
+
+# client tool clean up
+kubectl -n kafka delete deploy kafkacat
+kubectl -n kafka delete deploy python
+
+# kafka resource clean up
+kubectl -n kafka delete kafkauser my-user
+kubectl -n kafka delete kafkatopic my-topic
+kubectl -n kafka delete kafka my-cluster
+
+# strimzi clean up
+$ cd ~/githubrepo/ktds-edu2
+$ kubectl -n kafka delete -f ./kafka/strimzi/install/cluster-operator
+
+# kafka namespace clean up
+kubectl delete namespace kafka
+
+
+```
+
