@@ -26,6 +26,8 @@ srimzi  operator 를 install 한다.
 
 ## 2.1 관련 file download
 
+
+
 - 해당 사이트(https://strimzi.io/downloads/) 에서 해당 버젼을 다운로드 받는다.
 
 ```sh
@@ -36,7 +38,25 @@ $ cd ~/song/strimzi
 $ wget https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.29.0/strimzi-0.29.0.zip
 
 $ unzip strimzi-0.29.0.zip
+
+$ cd  ~/song/strimzi/strimzi-0.29.0
 ```
+
+
+
+or 미리 받아놓은 교육자료를 이용해도 된다.
+
+
+
+```sh
+$ cd ~/githubrepo/ktds-edu2
+
+$ cd ~/githubrepo/ktds-edu2/kafka/strimzi/strimzi-0.29.0/strimzi-0.29.0
+```
+
+
+
+
 
 
 
@@ -46,9 +66,9 @@ $ unzip strimzi-0.29.0.zip
   - strimzi operator 는 다양한 namespace 에서 kafka cluster 를 쉽게 생성할 수 있는 구조로 운영이 가능하다.  이때 STRIMZI_NAMESPACE 를 설정하여 특정 namespace 만으로 cluster 를 제한 할 수 있다.  ICIS-TR SA의 경우는 kafka-system 라는 namespace 에서만  kafka cluster 를 구성할 수 있도록 설정한다. 그러므로 아래 중 Single namespace 설정에 해당한다.
 
 ```sh
-$ cd  ~/song/strimzi/strimzi-0.29.0
+$ cd ~/githubrepo/ktds-edu2
 
-$ sed -i 's/namespace: .*/namespace: kafka/' install/cluster-operator/*RoleBinding*.yaml
+$ sed -i 's/namespace: .*/namespace: kafka/' kafka/strimzi/install/cluster-operator/*RoleBinding*.yaml
 ```
 
 
@@ -60,16 +80,23 @@ $ sed -i 's/namespace: .*/namespace: kafka/' install/cluster-operator/*RoleBindi
 - kafka namespace 를 watch 할 수 있는 권한 부여
 
 ```sh
-$ cd  ~/song/strimzi/strimzi-0.29.0
+$ cd ~/githubrepo/ktds-edu2
 
 # kafka namespace 를 watch 할 수 있는 권한 부여
-$ kubectl -n kafka create -f install/cluster-operator/020-RoleBinding-strimzi-cluster-operator.yaml
+$ kubectl -n kafka create -f kafka/strimzi/install/cluster-operator/020-RoleBinding-strimzi-cluster-operator.yaml
 
-$ kubectl -n kafka create -f install/cluster-operator/031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml
+$ kubectl -n kafka create -f kafka/strimzi/install/cluster-operator/031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml
 
 
 # Deploy the CRDs
-$ kubectl -n kafka create -f install/cluster-operator/ 
+$ kubectl -n kafka create -f kafka/strimzi/install/cluster-operator/ 
+
+
+
+# 확인
+$ kubectl -n kafka get pod
+NAME                                        READY   STATUS    RESTARTS   AGE
+strimzi-cluster-operator-86864b86d5-rfshw   0/1     Running   0          18s
 
 ```
 
@@ -78,7 +105,7 @@ $ kubectl -n kafka create -f install/cluster-operator/
 ## 2.5 clean up
 
 ```sh
-$ cd  ~/song/strimzi/strimzi-0.29.0
+$ cd ~/githubrepo/ktds-edu2
 
 $ oc -n kafka delete -f install/cluster-operator
 ```
@@ -97,7 +124,7 @@ $ oc -n kafka delete -f install/cluster-operator
 
 ### (1) kafka cluster 생성(no 인증)
 
-- 기본생성
+인증없는 기본생성 이므로 참고만 하자.
 
 ```sh
 $ cd ~/githubrepo/ktds-edu2
@@ -142,8 +169,6 @@ spec:
 $ kubectl -n kafka apply -f  ./strimzi/kafka/11.kafka-ephemeral-no-auth.yaml
 
 ```
-
-
 
 
 

@@ -1,9 +1,9 @@
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1beta1
 kind: KafkaUser
 metadata:
   name: my-user
   labels:
-    strimzi.io/cluster: my-cluster
+    strimzi.io/cluster: arsenal-cluster
   namespace: kafka
 spec:
   authentication:
@@ -15,15 +15,19 @@ spec:
         resource:
           type: topic
           name: my
-          patternType: prefix     # 1)  prefix or literal
+          patternType: prefix
       - operation: All
         resource:
-          name: my                # 2)
+          name: my
           patternType: prefix
           type: group
       - operation: All
         resource:
-          name: my                # 3)
+          type: topic
+          name: edu
+          patternType: prefix
+      - operation: All
+        resource:
+          name: edu
           patternType: prefix
           type: group
-
