@@ -3,7 +3,7 @@ kind: KafkaUser
 metadata:
   name: my-user
   labels:
-    strimzi.io/cluster: arsenal-cluster
+    strimzi.io/cluster: my-cluster
   namespace: kafka
 spec:
   authentication:
