@@ -320,7 +320,12 @@ spec:
           type: group
       - operation: All
         resource:
-          name: my               # 3)
+          type: topic
+          name: edu
+          patternType: prefix
+      - operation: All
+        resource:
+          name: edu
           patternType: prefix
           type: group
 ---
@@ -344,7 +349,7 @@ my-user   my-cluster   scram-sha-512    simple          True
 
   - ex) my-board-group
 
-- 3) default consumer-group 을 위해서 생성한다.
+  
 
   
 
@@ -865,7 +870,7 @@ my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32001,\
 my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32002
 export KAFKAUSER=my-user
 export PASSWORD=pprOnk80CDfo
-export TOPIC=my-topic
+export TOPIC=edu-topic-01
 
 
 ## topic 리스트
@@ -2368,10 +2373,6 @@ http://grafana-kafka.apps.211-34-231-82.nip.io
 
 
 
-
-
-
-
 ### (2) promehteus 연동
 
 - 메뉴 : Data Sources / Promehteus 
@@ -2383,13 +2384,15 @@ http://grafana-kafka.apps.211-34-231-82.nip.io
 
 - 메뉴: Dashboards / Manage
 - import : 11285입력
-- 참고링크 
-
-https://grafana.com/grafana/dashboards/11285-strimzi-kafka-exporter
+- 참고링크 : https://grafana.com/grafana/dashboards/11285-strimzi-kafka-exporter
 
 
 
 ### (4) 확인
+
+http://grafana.kafka.ktcloud.211.254.212.105.nip.io/d/jwPKIsniz/strimzi-kafka-exporter?orgId=1&refresh=5s&from=now-30m&to=now&var-consumergroup=edu-topic-group&var-topic=edu-topic-01
+
+
 
 - 메뉴 위치 : Dashboards > Manage > Strimzi Kafka Exporter
 
@@ -2543,6 +2546,10 @@ producer = KafkaProducer(bootstrap_servers='my-cluster.kafka.ktcloud.211.254.212
                         
 producer.send('my-topic', b'python test2')
 producer.send('my-topic', b'python test3')
+
+producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % 1)
+
+
 ```
 
 
@@ -2552,7 +2559,7 @@ producer.send('my-topic', b'python test3')
 ```python
 
 # 대량 테스트
-for i in range(100):
+for i in range(20):
     print(i)
     producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
 
@@ -2840,11 +2847,19 @@ python kafkaAdminClient.py
 
 
 
-# 9.  [실습] Java Sample
+# 9.  [실습] Java - SCS
 
+Spring Cloud Stream 를 이용한 샘플을 살펴볼 것이다.
 
+- Spring Cloud Stream 특징
 
+  - 어떤 메시지 플랫폼을 사용하는지 상관없이 추상화해서기능을 제공
 
+  - 메시지 플랫폼으로 Rabbit MQ 나 Kafka 를 사용한다고 하더라도 비즈니스 로직을 별도로 구분할 필요 없음
+
+  - Spring 에서 Configuration 설정을 알아서 설정함
+
+  - 매우 매우 심플한 사용
 
 
 
@@ -2877,32 +2892,36 @@ my-user
 | -------- | ------------ | --------------------------------- |
 | my-user  | pprOnk80CDfo | 2022년 7월에만  유지되고 삭제예정 |
 
- 
+
+
+
+
+
 
 ### (2) 개인당 Topic 할당
 
-| **Topic**       | **Group**       | **담당자** | **비고** |
-| --------------- | --------------- | ---------- | -------- |
-| sa-edu-topic-01 | sa-edu-group-01 | 송양종     |          |
-| sa-edu-topic-02 | sa-edu-group-02 | 김성태     |          |
-| sa-edu-topic-03 | sa-edu-group-03 | 김자영     |          |
-| sa-edu-topic-04 | sa-edu-group-04 | 박용진     |          |
-| sa-edu-topic-05 | sa-edu-group-05 | 김유석     |          |
-| sa-edu-topic-06 | sa-edu-group-06 | 서정민     |          |
-| sa-edu-topic-07 | sa-edu-group-07 | 허세환     |          |
-| sa-edu-topic-08 | sa-edu-group-08 | 김중완     |          |
-| sa-edu-topic-09 | sa-edu-group-09 | 김도영     |          |
-| sa-edu-topic-10 | sa-edu-group-10 | 성상철     |          |
-| sa-edu-topic-11 | sa-edu-group-11 | 이종환     |          |
-| sa-edu-topic-12 | sa-edu-group-12 | 김동하     |          |
-| sa-edu-topic-13 | sa-edu-group-13 | 한종호     |          |
-| sa-edu-topic-14 | sa-edu-group-14 | 이시우     |          |
-| sa-edu-topic-15 | sa-edu-group-15 | 류화동     |          |
-| sa-edu-topic-16 | sa-edu-group-16 | 최인선     |          |
-| sa-edu-topic-17 | sa-edu-group-17 | 김남규     |          |
-| sa-edu-topic-18 | sa-edu-group-18 | 주미선     |          |
-| sa-edu-topic-19 | sa-edu-group-19 | 김태룡     |          |
-| sa-edu-topic-20 | sa-edu-group-20 | 박상혁     |          |
+| **Topic**    | **Group**    | **담당자** | **비고** |
+| ------------ | ------------ | ---------- | -------- |
+| edu-topic-01 | edu-group-01 | 송양종     |          |
+| edu-topic-02 | edu-group-02 | 김성태     |          |
+| edu-topic-03 | edu-group-03 | 김자영     |          |
+| edu-topic-04 | edu-group-04 | 김유석     |          |
+| edu-topic-05 | edu-group-05 |            |          |
+| edu-topic-06 | edu-group-06 |            |          |
+| edu-topic-07 | edu-group-07 |            |          |
+| edu-topic-08 | edu-group-08 |            |          |
+| edu-topic-09 | edu-group-09 |            |          |
+| edu-topic-10 | edu-group-10 |            |          |
+| edu-topic-11 | edu-group-11 |            |          |
+| edu-topic-12 | edu-group-12 |            |          |
+| edu-topic-13 | edu-group-13 |            |          |
+| edu-topic-14 | edu-group-14 |            |          |
+| edu-topic-15 | edu-group-15 |            |          |
+| edu-topic-16 | edu-group-16 |            |          |
+| edu-topic-17 | edu-group-17 |            |          |
+| edu-topic-18 | edu-group-18 |            |          |
+| edu-topic-19 | edu-group-19 |            |          |
+| edu-topic-20 | edu-group-20 |            |          |
 
 
 
@@ -2935,18 +2954,20 @@ https://github.com/ssongman/kafka-consumer.git
 ```
 1) import - git - Project from Git(with smart import)
 
-2) Clone 선택
+2) Select Repository Source
+   Clone 선택
 
-3) URI 에 위 주소 붙여넣기
-# 클립보드에 기억된 git 주소로 자동 셋팅된다.
+3) Source Git Repository
+   URI 에 위 주소 붙여넣기
+   클립보드에 기억된 git 주소로 자동 셋팅된다.
 
-4) edu branch 만 선택(master 는 선택 해지)   <-- 중요 ★
-# 실습환경에 맞도록 edu branch 를 수정해 놓았음. 그러므로 edu 만 선택해서 받는다.
+4) Branch Selection
+   main 선택
 
 5) local Destination 에서 프로젝트 위치 지정
 
-6) Maven 확인 후 finish
-
+6) Import Projects
+   Maven 확인 후 finish
 ```
 
 
@@ -2980,6 +3001,14 @@ Run As - Spring Boot App 실행
 
 
 
+- Console log 확인
+
+```
+edu-topic-group: partitions assigned: [edu-topic-01-2, edu-topic-01-1, edu-topic-01-0]
+```
+
+
+
 
 
 ## 3) kafka-producer
@@ -2996,30 +3025,36 @@ https://github.com/ssongman/kafka-producer.git
 
 복사하여 클립보드에 기억한다.
 
+
+
 - STS 에서 import
   - Package Explorer 에서 우클릭 이후 아래 메뉴 선택
 
 ```
 1) import - git - Project from Git(with smart import)
 
-2) Clone 선택
+2) Select Repository Source
+   Clone 선택
 
-3) URI 에 위 주소 붙여넣기
-# 클립보드에 기억된 git 주소로 자동 셋팅된다.
+3) Source Git Repository
+   URI 에 위 주소 붙여넣기
+   클립보드에 기억된 git 주소로 자동 셋팅된다.
 
-4) edu branch 만 선택(master 는 선택 해지)   <-- 중요 ★
-실습환경에 맞도록 edu branch 를 수정해 놓았음. 그러므로 edu 만 선택해서 받는다.
+4) Branch Selection
+   main 선택
 
 5) local Destination 에서 프로젝트 위치 지정
 
-6) Maven  확인 후 finish
+6) Import Projects
+   Maven 확인 후 finish
+
 ```
 
 
 
 ### 2) 소스내 Topic 수정
 
-application-local.yaml 에서 아래 내용 수정
+src/main/resources/config/application-local.yaml 에서 아래 내용 수정
 
 ```yaml
 spring: 
@@ -3027,7 +3062,7 @@ spring:
     stream:
       bindings:
         boardCreate-out-0:
-          destination: sa-edu-topic-01   # 본인의 토픽명으로 수정할것
+          destination: edu-topic-01   # 본인의 토픽명으로 수정할것
 ```
 
  
@@ -3073,6 +3108,173 @@ while true; do curl -X POST http://localhost:8081/create \
  
  
 ```
+
+
+
+
+
+
+
+# 9.  [실습] Java - Spring Batch Kafka
+
+
+
+실습 내용설명
+
+
+
+```
+customer dto 의 모습으로 받아서 name 을 대문자로 변경한후 edu-topic-01-out 로 넘긴다.
+
+edu-topic-01 에서 받아서
+
+edu-topic-01-out  로 넘긴다.
+
+```
+
+
+
+## 1) data 준비
+
+### (1) producer 
+
+```python
+from kafka import KafkaProducer
+
+producer = KafkaProducer(bootstrap_servers='my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100',
+                        security_protocol="SASL_PLAINTEXT",
+                        sasl_mechanism='SCRAM-SHA-512',
+                        ssl_check_hostname=True,
+                        sasl_plain_username='my-user',
+                        sasl_plain_password='pprOnk80CDfo')
+                        
+    
+producer.send('edu-topic-01', b'python test3')
+
+producer.send('edu-topic-01', b'{"id":%d, "name": "song" }' % 1)
+
+
+
+
+# 대량 테스트
+for i in range(20):
+    print(i)
+    producer.send('my-topic', b'{"eventName":"a","num":%d,"title":"a", "writeId":"", "writeName": "", "writeDate":"" }' % i)
+
+```
+
+
+
+
+
+### 
+
+### (2) consumer
+
+```python
+from kafka import KafkaConsumer
+
+consumer = KafkaConsumer(bootstrap_servers='my-cluster.kafka.ktcloud.211.254.212.105.nip.io:32100',
+                        security_protocol="SASL_PLAINTEXT",
+                        sasl_mechanism='SCRAM-SHA-512',
+                        sasl_plain_username='my-user',
+                        sasl_plain_password='pprOnk80CDfo',
+                        ssl_check_hostname=True,
+                        auto_offset_reset='earliest',
+                        enable_auto_commit= True,
+                        group_id='edu-topic-01-group')
+
+# topic 확인
+consumer.topics()
+# {'my-topic'}
+
+# 사용할 topic 지정(구독)
+consumer.subscribe("edu-topic-01")
+consumer.subscription()    
+## {'sa-edu-topic-01'}
+
+# 메세지 읽기
+for message in consumer:
+   print("topic=%s partition=%d offset=%d: key=%s value=%s" %
+        (message.topic,
+          message.partition,
+          message.offset,
+          message.key,
+          message.value))
+```
+
+
+
+```
+class java.lang.String cannot be cast to class com.ssongman.Customer 
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  labels:
+    strimzi.io/cluster: my-cluster
+  name: edu-topic-01-out
+  namespace: kafka
+spec:
+  config:
+    retention.ms: 7200000
+  partitions: 3
+  replicas: 3
+  topicName: edu-topic-01-out
+---
+
+
+$ kubectl apply -f - <<EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  labels:
+    strimzi.io/cluster: my-cluster
+  name: edu-topic-01
+  namespace: kafka
+spec:
+  config:
+    retention.ms: 7200000
+  partitions: 3
+  replicas: 3
+  topicName: edu-topic-01
+EOF
+---
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
 
 
 
