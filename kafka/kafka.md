@@ -1085,12 +1085,14 @@ $ docker ps
 
 #### 2) pub/sub 확인
 
+password  와 주소를 확인한 후 변경하자.
+
 ```sh
 $ docker exec -it kafkacat bash
 
 export BROKERS=my-cluster.kafka.localhost.192.168.31.1.nip.io:32100
 export KAFKAUSER=my-user
-export PASSWORD=eGVNg7ZvPbi0
+export PASSWORD=uL5fI10uQx4m
 export TOPIC=my-topic
 export GROUP=my-topic-group
 
@@ -1115,7 +1117,6 @@ Metadata for all topics (from broker -1: sasl_plaintext://my-cluster.kafka.local
     partition 2, leader 0, replicas: 0,2,1, isrs: 1,2,0
 
 # broker0, 1, 3 을 확인하자.
-
 
 ## consumer
 kafkacat -b $BROKERS \
@@ -1248,7 +1249,6 @@ spec:
     app.kubernetes.io/managed-by: strimzi-cluster-operator
     app.kubernetes.io/name: kafka-exporter    
   type: ClusterIP
-
 
 
 $ kubectl -n kafka apply -f ./kafka/strimzi/monitoring/11.my-cluster-kafka-exporter-service.yaml
