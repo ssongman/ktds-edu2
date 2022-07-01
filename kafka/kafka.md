@@ -453,10 +453,10 @@ spec:
 ---
 
 
-
+# 실행
 $ kubectl -n kafka apply -f ./kafka/strimzi/user/11.kafka-user.yaml
 
-
+# kafkauser 확인
 $ kubectl -n kafka get kafkauser
 NAME      CLUSTER      AUTHENTICATION   AUTHORIZATION   READY
 my-user   my-cluster   scram-sha-512    simple          True
@@ -484,11 +484,13 @@ NAME      TYPE     DATA   AGE
 my-user   Opaque   2      28s
 
 $ kubectl -n kafka get secret my-user -o jsonpath='{.data.password}' | base64 -d
+
 pprOnk80CDfo
 
 # user/pass 
 ## KT Cloud 기준 : my-user / pprOnk80CDfo
 ## Local 기준    : my-user / eGVNg7ZvPbi0 
+## 수강생 기준    : my-user / uL5fI10uQx4m
   
   
 ```
@@ -568,14 +570,16 @@ spec:
   partitions: 3
   replicas: 3
   config:
-    #retention.ms: 7200000      # 2 hour
-    retention.ms: 86400000      # 24 hours
+    retention.ms: 7200000      # 2 hour
+    #retention.ms: 86400000      # 24 hours
     segment.bytes: 1073741824   # 1GB
 
 
+# topic 생성
 $ kubectl -n kafka apply -f ./kafka/strimzi/topic/11.kafka-topic.yaml
 
 
+# topic 생성 확인
 $ kubectl -n kafka get kafkatopic my-topic
 NAME       CLUSTER      PARTITIONS   REPLICATION FACTOR   READY
 my-topic   my-cluster   3            3                    True
@@ -584,7 +588,7 @@ my-topic   my-cluster   3            3                    True
 
 
 
-### (2) 확인
+### (2) Topic  상세 확인
 
 ```sh
 $ kubectl -n kafka get kafkatopic my-topic -o yaml
@@ -733,11 +737,16 @@ kafka 접근 가능여부를 확인하기 위해 kafka Client 용 app 인 kafkac
 ### (1) kafkacat 설치
 
 ```sh
+# kafka cat 설치
 $ kubectl -n kafka create deploy kafkacat \
     --image=confluentinc/cp-kafkacat:latest \
     -- sleep 365d
 
-# pod 내부명령 수행
+# 설치진행 확인
+$ kubectl -n kafka get pod
+
+
+# pod 내부로 진입( bash 명령 수행)
 $ kubectl -n kafka exec -it deploy/kafkacat -- bash
 
 
@@ -746,8 +755,10 @@ $ kubectl -n kafka exec -it deploy/kafkacat -- bash
 
 
 #### ※ 참고
-windows 환경의 gitbash 를 이용해 pod 내부명령을 수행한다면 prompt 가 보이지 않을것이다.
-windows 에서 linux 체제와 호환이 되지 않아서 발생하는 이슈이다.
+windows 환경의 gitbash 를 이용해 pod 내부명령을 수행한다면 prompt 가 보이지 않을수도 있다.
+
+이런경우 windows 에서 linux 체제와 호환이 되지 않아서 발생하는 이슈이다.
+
 아래와 같이 winpty 를 붙인다면 prompt 가 보이니 참고하자.
 
 ```sh
@@ -767,10 +778,9 @@ id/pass 가 필요
 ```sh
 $ kubectl -n kafka exec -it deploy/kafkacat -- bash
 
-
 export BROKERS=my-cluster-kafka-bootstrap:9092
 export KAFKAUSER=my-user
-export PASSWORD=eGVNg7ZvPbi0 
+export PASSWORD=uL5fI10uQx4m        ## 개인별 passwrod 붙여넣자.
 export TOPIC=my-topic
  
 ## topic 리스트
@@ -1019,7 +1029,7 @@ my-cluster   3                        3                     True
 
 
 
-$ kubectl -n kafka get kafka my-cluster
+$ kubectl -n kafka get kafka my-cluster -o yaml
 ...
 status:
 ...
@@ -1063,8 +1073,12 @@ Local PC(Cluster 외부) 에서  kafka 접근 가능여부를 확인하기 위�
 kafkacat 을 docker 로 설치한다.
 
 ```sh
+# 실행
 $ docker run --name kafkacat -d --user root confluentinc/cp-kafkacat:latest sleep 365d
 
+
+# 확인
+$ docker ps
 ```
 
 
