@@ -915,12 +915,19 @@ my-release-redis-replicas   NodePort    10.96.105.76    <none>        6379:32210
 
 
 
-### (4) Catch up
+### (4) Clean Up
 
 ```sh
 
-# 삭제시
+# 삭제
 $ helm -n redis-system delete my-release
+
+# 확인
+$ helm -n redis-system ls
+$ kubectl -n redis-system get all
+
+# namespace 삭제
+$ kubectl delete namespace redis-system
 
 ```
 
@@ -947,8 +954,6 @@ $ docker exec -it redis-client bash
 
 ## Local PC IP로 cluster mode 접근
 $ redis-cli -h 192.168.31.1 -c -a new1234 -p 32200
-
-
 
 ```
 
@@ -998,7 +1003,7 @@ P3X Web UI 를 kubernetes 에 설치해 보자.
 $ cd ~/githubrepo/ktds-edu2
 
 
-$ cat ./redis/redisui/11.p3xredisui.yaml
+$ cat ./redis/redisui/12.p3xredisui-local.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -1056,6 +1061,7 @@ metadata:
 spec:
   ports:
   - port: 7843
+    nodePort: 32220
     targetPort: p3x-redis-ui
     name: p3x-redis-ui
   selector:
@@ -1064,10 +1070,7 @@ spec:
 ---
 
 # install
-$ kubectl -n redis-system apply -f ./redis/redisui/11.p3xredisui.yaml
-
-# 삭제시
-$ kubectl -n redis-system delete -f ./redis/redisui/11.p3xredisui.yaml
+$ kubectl -n redis-system apply -f ./redis/redisui/12.p3xredisui-local.yaml
 
 ```
 
@@ -1075,7 +1078,7 @@ $ kubectl -n redis-system delete -f ./redis/redisui/11.p3xredisui.yaml
 
 ## 2) ui 확인
 
-http://p3xredisui.redis-system.ktcloud.211.254.212.105.nip.io/main/key/people
+http://localhost:32220/
 
 ![image-20220626181624749](redis.assets/image-20220626181624749.png)
 
@@ -1083,7 +1086,14 @@ http://p3xredisui.redis-system.ktcloud.211.254.212.105.nip.io/main/key/people
 
 
 
+## 3) Clean up
 
+```sh
+$ cd ~/githubrepo/ktds-edu2
+
+# 삭제시
+$ kubectl -n redis-system delete -f ./redis/redisui/12.p3xredisui-local.yaml
+```
 
 
 
@@ -1101,45 +1111,67 @@ Redis 6.0 이상부터는 계정별 access 수준을 정의할 수 있다.
 
 
 
-## 1) ACL 기본명령
 
 
+## 1) Redis client 확인
+
+local pc 에서 access 테스트를 위해 docker redis client 를 설치하자.
 
 ```sh
-$ redis-cli -h 211.254.212.105 -c -a new1234 -p 32200
+## redis-client 용도로 docker client 를 실행한다.
+$ docker run --name redis-client -d --rm --user root docker.io/bitnami/redis-cluster:6.2.7-debian-11-r3 sleep 365d
+
+## docker 내에 진입후
+$ docker exec -it redis-client bash
+
+## Local PC IP로 cluster mode 접근
+$ redis-cli -h 192.168.31.1 -a new1234 -p 32200
+192.168.31.1:32200>
+
+```
+
+
+
+
+
+## 2) ACL 기본명령
+
+```sh
 
 # 계정 목록
-211.254.212.105:32200> acl list
+192.168.31.1:32200> acl list
 1) "user default on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
+
+## 기본적으로 default 라는 계정이 존재한다.
 
 
 # 계정 추가
-211.254.212.105:32200> acl setuser supersong on >new1234 allcommands allkeys
+192.168.31.1:32200> acl setuser supersong on >new1234 allcommands allkeys
 OK
-211.254.212.105:32200> acl setuser tempsong on >new1234 allcommands allkeys
+192.168.31.1:32200> acl setuser tempsong on >new1234 allcommands allkeys
 OK
 
 
-211.254.212.105:32200> acl list
+192.168.31.1:32200> acl list
 1) "user default on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
 2) "user supersong on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
 3) "user tempsong on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
 
 
 # 계정 전환
-211.254.212.105:32200> acl whoami
+192.168.31.1:32200> acl whoami
 "default"
 
-211.254.212.105:32200> auth supersong new1234
+192.168.31.1:32200> auth supersong new1234
 OK
-211.254.212.105:32200> acl whoami
+192.168.31.1:32200> acl whoami
 "supersong"
 
-211.254.212.105:32200> auth default new1234
+192.168.31.1:32200> auth default new1234
 OK
 
 # 계정 삭제
-211.254.212.105:32200> acl deluser tempsong
+192.168.31.1:32200> acl deluser tempsong
 (integer) 1
 
 ```
@@ -1155,10 +1187,10 @@ OK
 ```sh
 
 # 계정생성
-211.254.212.105:32200> acl setuser readonlysong on >new1234 allcommands allkeys -set +get
+192.168.31.1:32200> acl setuser readonlysong on >new1234 allcommands allkeys -set +get
 OK
 
-211.254.212.105:32200> acl list
+192.168.31.1:32200> acl list
 1) "user default on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
 2) "user readonlysong on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all -set"
 3) "user supersong on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
@@ -1169,7 +1201,7 @@ OK
 "1"
 
 # 쓰기는 불가능
-211.254.212.105:32200> set a 1
+192.168.31.1:32200> set a 1
 (error) NOPERM this user has no permissions to run the 'set' command or its subcommand
 
 ```
@@ -1186,46 +1218,46 @@ OK
 # song 으로 시작하는 key 만 접근가능하도록 설정
 
 
-211.254.212.105:32200> acl setuser song on >new1234 allcommands allkeys
+192.168.31.1:32200> acl setuser song on >new1234 allcommands allkeys
 OK
-211.254.212.105:32200> acl list
+192.168.31.1:32200> acl list
 1) "user default on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
 2) "user readonlysong on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all -set"
 3) "user song on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
 4) "user supersong on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
 
 
-211.254.212.105:32200> acl setuser song resetkeys ~song*
+192.168.31.1:32200> acl setuser song resetkeys ~song*
 OK
 
 
-211.254.212.105:32200> acl list
+192.168.31.1:32200> acl list
 1) "user default on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
 2) "user readonlysong on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all -set"
 3) "user song on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~song* &* +@all"
 4) "user supersong on #65fd3b5c243ea857f91daef8e3d5c203fa045f33e034861998b9d74cc42ceb24 ~* &* +@all"
 
 
-211.254.212.105:32200> auth song new1234
+192.168.31.1:32200> auth song new1234
 OK
 
-211.254.212.105:32200> acl whoami
+192.168.31.1:32200> acl whoami
 "song"
 
 
 # set 명령 테스트
-211.254.212.105:32200> set a 1
+192.168.31.1:32200> set a 1
 (error) NOPERM this user has no permissions to access one of the keys used as arguments
 
-211.254.212.105:32200> set song_a 1
+192.168.31.1:32200> set song_a 1
 OK
 
 # get 명령 테스트
-211.254.212.105:32200> get a
+192.168.31.1:32200> get a
 (error) NOPERM this user has no permissions to access one of the keys used as arguments
 
 
-211.254.212.105:32200> get song_a
+192.168.31.1:32200> get song_a
 "1"
 
 
@@ -1377,7 +1409,7 @@ public class Person {
 
 
 
-# 9. python test - 작성중
+# 7. python test - 작성중
 
 
 - pod로 실행
@@ -1395,4 +1427,34 @@ oc -n redis-system create deploy pythonfortest --image=ktis-bastion01.container.
 
 
 
+
+# 9. Redis All Clean Up
+
+local PC 자원 절약을 위해서 사용하지 않을때는 반드시 Clean Up해 놓자.
+
+```sh
+
+
+# 1. redis 삭제
+$ helm -n redis-system delete my-release
+
+# 확인
+$ helm -n redis-system ls
+
+
+
+
+# 2. p3x 삭제
+$ cd ~/githubrepo/ktds-edu2
+
+$ kubectl -n redis-system delete -f ./redis/redisui/12.p3xredisui-local.yaml
+
+# 확인
+$ kubectl -n redis-system get all
+
+
+# 3. namespace 삭제
+$ kubectl delete namespace redis-system
+
+```
 

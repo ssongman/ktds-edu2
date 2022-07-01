@@ -194,9 +194,8 @@ $ kubectl -n kafka create -f ./kafka/strimzi/install/cluster-operator/020-RoleBi
 
 $ kubectl -n kafka create -f ./kafka/strimzi/install/cluster-operator/031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml
 
-
 # Deploy the CRDs
-$ kubectl -n kafka create -f ./kafka/strimzi/kafka/strimzi/install/cluster-operator/ 
+$ kubectl -n kafka create -f ./kafka/strimzi/install/cluster-operator/
 
 
 
