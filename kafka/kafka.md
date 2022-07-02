@@ -410,7 +410,7 @@ order로 시작하는 모든 group을 Consume 가능
 
 ## 2) User 생성
 
-### (1) kafkauser생성
+### (1) KafkaUser생성
 
 ```sh
 $ cd ~/githubrepo/ktds-edu2
@@ -453,7 +453,7 @@ spec:
 ---
 
 
-# 실행
+# KafkaUser 생성 명령 실행
 $ kubectl -n kafka apply -f ./kafka/strimzi/user/11.kafka-user.yaml
 
 # kafkauser 확인
@@ -575,7 +575,7 @@ spec:
     segment.bytes: 1073741824   # 1GB
 
 
-# topic 생성
+# topic 생성 명령 실행
 $ kubectl -n kafka apply -f ./kafka/strimzi/topic/11.kafka-topic.yaml
 
 
@@ -915,6 +915,57 @@ Strimzi 는 외부에서 접근가능하도록  다양한 기능을 제공한다
 
 
 
+
+
+### (1) Node IP 확인
+
+- node port 를 인식할 수 있는 본인 PC 의 IP를 인식하도록 nip host 에 본인 IP 를 삽입하자.
+
+- 참고로 본인  IP 는 명령으로 확인할 수 있다.
+
+  ```sh
+  $ ipconfig
+  
+  Windows IP 구성
+  
+  
+  무선 LAN 어댑터 로컬 영역 연결* 1:
+  
+     미디어 상태 . . . . . . . . : 미디어 연결 끊김
+     연결별 DNS 접미사. . . . :
+  
+  무선 LAN 어댑터 로컬 영역 연결* 10:
+  
+     미디어 상태 . . . . . . . . : 미디어 연결 끊김
+     연결별 DNS 접미사. . . . :
+  
+  이더넷 어댑터 VMware Network Adapter VMnet1:
+  
+     연결별 DNS 접미사. . . . :
+     링크-로컬 IPv6 주소 . . . . : fe80::b43c:3b41:b773:48da%9
+     IPv4 주소 . . . . . . . . . : 192.168.31.1                   <=============  해당 IP 를 추출한다.
+     서브넷 마스크 . . . . . . . : 255.255.255.0
+     기본 게이트웨이 . . . . . . :
+  
+  이더넷 어댑터 VMware Network Adapter VMnet8:
+  
+     연결별 DNS 접미사. . . . :
+     링크-로컬 IPv6 주소 . . . . : fe80::905c:f7ec:a1e4:7ca6%12
+     IPv4 주소 . . . . . . . . . : 192.168.239.1
+     서브넷 마스크 . . . . . . . : 255.255.255.0
+     
+  ```
+
+  
+
+
+
+
+
+
+
+
+
 ### (1) Kafka Cluster NodePort 등록
 
 - node port 는 route type 을 사용하지 못한다.(택일해야 함)
@@ -973,46 +1024,6 @@ spec:
 - nodePort 를 직접 명시할 수 있다.
 
 - AdvertisedHost 필드에는 DNS 이름이나 IP 주소를 표기할 수 있다.
-
-- node port 를 인식할 수 있는 본인 PC 의 IP를 인식하도록 nip host 에 본인 IP 를 삽입하자.
-
-- 참고로 본인  IP 는 명령으로 확인할 수 있다.
-
-  ```sh
-  $ ipconfig
-  
-  Windows IP 구성
-  
-  
-  무선 LAN 어댑터 로컬 영역 연결* 1:
-  
-     미디어 상태 . . . . . . . . : 미디어 연결 끊김
-     연결별 DNS 접미사. . . . :
-  
-  무선 LAN 어댑터 로컬 영역 연결* 10:
-  
-     미디어 상태 . . . . . . . . : 미디어 연결 끊김
-     연결별 DNS 접미사. . . . :
-  
-  이더넷 어댑터 VMware Network Adapter VMnet1:
-  
-     연결별 DNS 접미사. . . . :
-     링크-로컬 IPv6 주소 . . . . : fe80::b43c:3b41:b773:48da%9
-     IPv4 주소 . . . . . . . . . : 192.168.31.1                   <=============  해당 IP 를 추출한다.
-     서브넷 마스크 . . . . . . . : 255.255.255.0
-     기본 게이트웨이 . . . . . . :
-  
-  이더넷 어댑터 VMware Network Adapter VMnet8:
-  
-     연결별 DNS 접미사. . . . :
-     링크-로컬 IPv6 주소 . . . . : fe80::905c:f7ec:a1e4:7ca6%12
-     IPv4 주소 . . . . . . . . . : 192.168.239.1
-     서브넷 마스크 . . . . . . . : 255.255.255.0
-     
-  ```
-
-  
-
 
 
 
