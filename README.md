@@ -40,7 +40,45 @@
 
 
 
-# 2. Class1: Kafka on Kubernetes ( [가이드 문서 보기](./kafka/kafka.md) )  
+# 2. Kafka 개념 ( [가이드 문서 보기](./kafka/1.kafka-개념.md) )  
+
+
+
+## 1) Kafka 개요
+
+- kafka 개요와 특징확인
+
+
+
+## 2) Kafka 기본
+
+- Kafka 구성요소인 Broker, Message, Producer, Consumer ,Topic 의 Concept 대해 확인
+- Broker
+  - Producer와 Consumer 사이에 존재하는 Broker 확인
+- Partition과 Consumer Group
+  - 병렬처리를 가능하게 하는 Partition과 수신 애플리케이션을 담당하는 Consumer Group 
+- Offset 관리
+  - Conumer Group 단위로 Offset 을 관리
+- Producer/Consumer Partitioning
+  - Partion 별로 메세지를 수신/ 발신 한느 방법에 대한 개념 확인
+
+
+
+## 3) Kafka Replication
+
+- Replicas
+  -  Broker 장애시 수신 메시지 분실 방지를 위한 복제(Replication)
+- ISR(In-Sync Replica)
+  - ISR은 **현재 동기화 상태에 있는** **리플리케이션**
+- Producer Ack
+  - Replication 구조에서 Producer 메시지 송신 타이밍을 결정하는 Ack 설정
+
+
+
+
+
+
+# 3. Kafka Hands-in ( [가이드 문서 보기](./kafka/2.kafka-hands-in.md) )  
 
 
 
