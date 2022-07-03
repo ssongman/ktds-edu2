@@ -1610,12 +1610,12 @@ $ helm -n redis-system ls
 $ cd ~/githubrepo/ktds-edu2
 $ kubectl -n redis-system delete -f ./redis/redisui/12.p3xredisui-local.yaml
 
-# 확인
-$ kubectl -n redis-system get all
-
 
 # 3) redis-client 삭제 - kubernetes deploy
 $ kubectl -n redis-system delete deploy redis-client 
+
+# 확인
+$ kubectl -n redis-system get all
 
 
 # 4) namespace 삭제
@@ -1635,7 +1635,7 @@ $ docker rm -f redis-client
 
 ## 8.2 Docker Desktop 일시정지
 
-Kubernetes 를 포함한 docker Desktop 은 CPU 나 메모리를 많이 차지 한다. 그러므로 원할 한 실습을 위해서 잠깐 pause 해 놓자.
+Kubernetes 를 포함한 docker Desktop 은 CPU 나 메모리를 많이 차지 한다. 그러므로 사용하지 않을때 pause 해 놓자.
 
 - 메뉴 : 우측 docker Desktop 아이콘 클릭 > Puased 클릭
 
