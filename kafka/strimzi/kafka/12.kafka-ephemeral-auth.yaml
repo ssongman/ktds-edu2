@@ -35,4 +35,4 @@ spec:
       type: ephemeral
   entityOperator:
     topicOperator: {}
-    userOperator: {} 
+    userOperator: {}

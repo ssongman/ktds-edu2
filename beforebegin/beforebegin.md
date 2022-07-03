@@ -18,7 +18,7 @@
 
 
 
-## 1) WSL2 설치
+## 1.1 WSL2 설치
 
 ### (1) 사전준비
 
@@ -37,7 +37,7 @@
 
 
 
-## 2) Docker Desktop 설치
+## 1.2 Docker Desktop 설치
 
 Kafka / Redis External Test 를 위해서 Docker Container 가 필요하다.  또한 Docker Desktop 에서 제공되는 Kubernetes 환경을 이용할 것이다.
 
@@ -57,23 +57,7 @@ Kafka / Redis External Test 를 위해서 Docker Container 가 필요하다.  �
 
 
 
-### (3) Kubernetes 설치
-
-
-
-![image-20220702153214617](beforebegin.assets/image-20220702153214617.png)
-
-
-
-- 완료되면 아래 와 같이 docker / kubernetes is running 표기됨
-
-![image-20220702153402826](beforebegin.assets/image-20220702153402826.png)
-
-
-
-
-
-### (3) docker daemon 확인
+### (3) Docker Daemon 확인
 
 docker 가 실행가능 곳에서 아래와 같이 version 을 확인하자.
 
@@ -116,19 +100,13 @@ Server version 을 확인할 수 있다면 정상 설치되었다고 볼 수 있
 
 
 
-### (4) WSL2에서 도커 데스크탑 실행 설정
+### (4) WSL2에서 Docker Engine 실행 설정
 
 도커 데스크탑을 설치하고 설정 페이지의 **General** 탭에서 **Use the WSL2 based engine** 옵션을 체크해준다.
 
-![img](beforebegin.assets/cc2fa29ced0170be569fa2babb3f37ce853a4a6edaa393ae7d7e6cf0e734809e.m.png)
+![image-20220702163538922](beforebegin.assets/image-20220702163538922.png)
 
 
-
-
-
-Resource -> WSL Integration 페이지로 이동해서 설정을 확인한다. 자신이 사용중인 WSL2 배포판이 맞는지 확인한다.
-
-![img](beforebegin.assets/2e6f6b874322977fd2a606fac1628628a42e0e6161aaecae4e0ca5891dda008d.m.png)
 
 
 
@@ -136,7 +114,119 @@ Resource -> WSL Integration 페이지로 이동해서 설정을 확인한다. �
 
 도커 데스크탑을 설치하고 정상적으로 설정되어있다면, 바로 WSL2 우분투 터미널에서 도커 명령어를 사용할 수 있다.
 
-![img](beforebegin.assets/d0f6a634419019be2cf954e7258932a9ea28afc6a058059f54e659104003fddf.m.png)
+![image-20220702163730325](beforebegin.assets/image-20220702163730325.png)
+
+
+
+
+
+## 1.3 Docker Desktop - K8s 설정
+
+
+
+### (1) Kubernetes 설정
+
+Docker Desktop 에서 Kubernetes 를 설치해보자.
+
+- 위치 : Dashboard > Settings > Kubernetes
+  - Enable Kubernetes 에 check 하기
+
+![image-20220702153214617](beforebegin.assets/image-20220702153214617.png)
+
+
+
+- 완료되면 아래 와 같이 docker / kubernetes is running 표기됨
+
+![image-20220702153402826](beforebegin.assets/image-20220702153402826.png)
+
+
+
+### (2) Kubernetes version 확인
+
+kubectl 명령으로 kubernetes version 을 확인해보자.
+
+```sh
+$ kubectl version -o yaml
+clientVersion:
+  buildDate: "2022-05-03T13:46:05Z"
+  compiler: gc
+  gitCommit: 4ce5a8954017644c5420bae81d72b09b735c21f0
+  gitTreeState: clean
+  gitVersion: v1.24.0
+  goVersion: go1.18.1
+  major: "1"
+  minor: "24"
+  platform: linux/amd64
+kustomizeVersion: v4.5.4
+serverVersion:
+  buildDate: "2022-05-03T13:38:19Z"
+  compiler: gc
+  gitCommit: 4ce5a8954017644c5420bae81d72b09b735c21f0
+  gitTreeState: clean
+  gitVersion: v1.24.0
+  goVersion: go1.18.1
+  major: "1"
+  minor: "24"
+  platform: linux/amd64
+
+```
+
+ServerVersion 이 출력된다면 Kubernetes 와 연결이 잘 된것이다.
+
+
+
+
+
+#### Multi Cluster Client 설정
+
+kubernetes 가 기존에 설치 되어 있던 환경이라면 cluster 를 선택할 수 있다.
+
+```sh
+# context 확인
+$ kubectl config get-contexts
+CURRENT   NAME             CLUSTER          AUTHINFO         NAMESPACE
+*         default          default          default
+          docker-desktop   docker-desktop   docker-desktop
+
+
+# docker-desktop 으로 변경
+$ kubectl config set current-context docker-desktop
+
+
+# context 확인
+$ kubectl config get-contexts
+CURRENT   NAME             CLUSTER          AUTHINFO         NAMESPACE
+          default          default          default
+*         docker-desktop   docker-desktop   docker-desktop
+
+
+# kubectl 연결 확인
+$ kubectl version -o yaml
+clientVersion:
+  buildDate: "2022-05-03T13:46:05Z"
+  compiler: gc
+  gitCommit: 4ce5a8954017644c5420bae81d72b09b735c21f0
+  gitTreeState: clean
+  gitVersion: v1.24.0
+  goVersion: go1.18.1
+  major: "1"
+  minor: "24"
+  platform: linux/amd64
+kustomizeVersion: v4.5.4
+serverVersion:
+  buildDate: "2022-05-03T13:38:19Z"
+  compiler: gc
+  gitCommit: 4ce5a8954017644c5420bae81d72b09b735c21f0
+  gitTreeState: clean
+  gitVersion: v1.24.0
+  goVersion: go1.18.1
+  major: "1"
+  minor: "24"
+  platform: linux/amd64
+
+# 위와 같이 serverVersion 이 표현되어야 정상연결 된 것이다.
+
+```
 
 
 
@@ -146,7 +236,11 @@ Resource -> WSL Integration 페이지로 이동해서 설정을 확인한다. �
 
 
 
-## 3) MobaxTerm 설치
+
+
+
+
+## 1.4 MobaxTerm 설치
 
 WSL2 에 접근하기 위해서는 터미널이 필요하다.
 
@@ -169,7 +263,11 @@ CMD / PowerShell / putty 와 같은 기본 터미널을 이용해도 되지만 �
 
 
 
-## 4) Typora 설치
+
+
+
+
+## 1.5 Typora 설치
 
 ### (1) 설치
 
@@ -193,18 +291,33 @@ CMD / PowerShell / putty 와 같은 기본 터미널을 이용해도 되지만 �
 
 
 
+## 1.6 STS 설치
+
+### (1) 설치
+
+- 링크 : https://download.springsource.com/release/STS4/4.15.1.RELEASE/dist/e4.24/spring-tool-suite-4-4.15.1.RELEASE-e4.24.0-win32.win32.x86_64.self-extracting.jar
 
 
 
 
 
-## 5) 교육문서 Download
+# 2. 교육문서
 
-해당 교육문서는 모두 markdown 파일이다.  해당 자료를 typora 로 오픈하기 위해서 본인 PC 에서 교육자료를 다운받아서 Typora 로 오픈하자.
+해당 교육문서는 모두 markdown 형식으로 작성되었다.  Chrome Browser 에서 github 문서를 직접 확인해도 된다.
+
+하지만 실습을 따라가다 보면 개인별로 수정해야 할 부분이 있는데 web browser 에서는 수정이 안되기 때문에 수정이 용이한 환경이 훨씬 좋을 것이다.
+
+좀더 효율적인 실습을 위해서 해당 자료를 download 하여 markdown 전용 viewer 인 Typora 로 오픈하여 실습에 참여하자.
+
+
+
+## 2.1 교육문서 Download
+
+command 명령어로 아래와 같이 임의의 디렉토리를 생성후 git clone 으로 download 하자.
 
 ```sh
 
-# 임의의 디렉토리를 생성
+# 본인 PC에서 임의의 디렉토리를 생성
 D:\>mkdir githubrepo
 
 D:\>cd githubrepo
@@ -233,6 +346,10 @@ D:\githubrepo\ktds-edu2>dir
 
 
 
+## 2.2 typora 로 readme.md 파일오픈
+
+
+
 - typora 로 오픈
 
 ```
@@ -249,99 +366,39 @@ D:\githubrepo\ktds-edu2\README.md
 
 
 
-# 아래는 그냥 삭제하자...........
+# 3. 실습자료
 
-
-
-# 2. 실습 환경 준비(KT Cloud)
-
-## 1) KT Cloud 서버
-
-개인 PC의 WSL 에서의 Kubernetes는 한개의 노드를 사용한 소형 Cluster이다. 그러므로 Kafka 모니터링 을 위한 Prometheus 등 고용량이 필요한 프로그램들은 설치 되지 않는다.
-
-실습을 위해서는 좀더 높은 Cluster 사양이 필요하다.
-
-원할한 실습을 위해서 KT Cloud 에 Kafka Monitoring 등 관련 셋팅을 미리 해 놓은 상태이다.
-
-개인별 계정과 개인별 Namespace 에서 다양한 실습을 진행할 것이다.  이를 위해 서버 접근정보를 이해하고 개인 계정을 확인하자.
-
-
-
-### (1) KT Cloud 이해
-
-KT Cloud에 VM 서버 하나를 생성하게 되면 다음과 같은 구조가 된다.
-
-
-
-![img](beforebegin.assets/010103012.png)
-
-- 기본환경 설명
-  - Public IP는 외부에서 접근을 할 수 있는 IP
-
-  - Private IP는 외부에서 접근은 못하나, 같은 서브넷 내에서 사용할 수 있는 IP
-  - 외부에서 VM에 접근을 하기 위해서는 가상라우터에서 포트포워딩 작업이 필요하다.
-- 가상라우터 (Virtual Router)
-
-  - 사용자만 접근할 수 있는 서브넷과 외부의 관문(게이트웨이) 및 라우터 역할을 하는 가상 서버이다.
-
-  - 한 계정의 한 zone에서 최초 VM을 생성하게 되면 자동으로 생성된다.
-
-  - 기본으로 제공되어 과금이 되지 않으며, 사용자가 콘트롤 할 수 없다.
-
-  - 하나의 공인IP가 기본으로 부여되며, 추가 공인IP를 할당할 수 있다.
-- 포트포워딩
-
-  - 가상라우터에서 외부에서 접근가능한 공인IP를 내부의 사설IP로 연결(포워딩) 해주는 작업이다.
-
-  - Public IP:port  <-> Private IP:port 와 1:1 매핑이 기본이며, StaticNAT를 이용해 공인IP <-> 사설IP IP간의 매핑도 가능하다.
-
-
-
-### (2) ssh terminal (Mobaxterm) 실행
-
-- 메뉴 : session > SSH 
-
-- Romote host : 211.254.212.105
-- User : user01(개인별 계정)
-- Port : 10022(master02),   10023(master03)
-- password : 별도 통지
-
-
-
-![image-20220601194227476](beforebegin.assets/image-20220601194227476.png)
+실습시 필요한 다양한 yaml 파일들을 미리 download받아 놓자.
 
 
 
 
+## 3.1 실습자료 Download
 
-## 2) 수강생별 계정 매핑
-별도 공지
-
-
-
-
-## 3) 교육자료 download
-
-본인 계정으로 접속 하였다면 테스트를 위해서 git clone 으로 교육 자료를 받아 놓자.
+kubernetes 접근이 가능한 terminal(mobaxterm 등) 에서 아래와 같이  실습파일을 download 하자.
 
 ```sh
-# 본인 계정
-## githubrepo directory 생성
-$ mkdir ~/githubrepo
+$ mkdir ~/githubrepo/
 
-$ cd ~/githubrepo
+$ cd ~/githubrepo/
 
-$ git clone https://github.com/ssongman/ktds-edu2.git
+$ git clone https://github.com/ssongman/ktds-edu2
 Cloning into 'ktds-edu2'...
-remote: Enumerating objects: 69, done.
-remote: Counting objects: 100% (69/69), done.
-remote: Compressing objects: 100% (55/55), done.
-remote: Total 69 (delta 15), reused 62 (delta 11), pack-reused 0
-Unpacking objects: 100% (69/69), 1.63 MiB | 4.09 MiB/s, done.
+remote: Enumerating objects: 435, done.
+remote: Counting objects: 100% (435/435), done.
+remote: Compressing objects: 100% (313/313), done.
+remote: Total 435 (delta 126), reused 408 (delta 99), pack-reused 0
+Receiving objects: 100% (435/435), 13.15 MiB | 6.58 MiB/s, done.
+Resolving deltas: 100% (126/126), done.
 
-$ ll ~/githubrepo
-drwxrwxr-x  5 song song 4096 Jun  2 13:32 ktds-edu/
+$ cd ~/githubrepo/ktds-edu2
 
-$ cd ~/githubrepo/ktds-edu
+$ ll
+drwxr-xr-x 8 song song 4096 Jul  2 17:02 .git/
+-rw-r--r-- 1 song song 2595 Jul  2 17:02 README.md
+drwxr-xr-x 3 song song 4096 Jul  2 17:02 beforebegin/
+drwxr-xr-x 5 song song 4096 Jul  2 17:02 kafka/
+drwxr-xr-x 3 song song 4096 Jul  2 17:02 ktcloud-setup/
+drwxr-xr-x 4 song song 4096 Jul  2 17:02 redis/
 ```
 
