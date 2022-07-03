@@ -299,6 +299,14 @@ CMD / PowerShell / putty 와 같은 기본 터미널을 이용해도 되지만 �
 
 
 
+### (2) Lombok 설치
+
+- 링크: https://lovelyunsh.tistory.com/126
+
+
+
+
+
 
 
 # 2. 교육문서
