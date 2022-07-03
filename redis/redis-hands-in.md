@@ -16,7 +16,7 @@ WSL 환경에서 redis 를 설치해 보자.
 
 
 
-## 1) namespace 생성
+## 1.1 namespace 생성
 
 ```sh
 $ kubectl create ns redis-system
@@ -29,7 +29,7 @@ $ alias krs='kubectl -n redis-system'
 
 
 
-## 2) helm chart
+## 1.2 helm chart
 
 쿠버네티스에 서비스를 배포하는 방법이 다양하게 존재하는데 그중 대표적인 방법중에 하나가 Helm chart 방식 이다.
 
@@ -105,7 +105,7 @@ kubernetes 기반에서 Redis 를 설치해보자.
 
 
 
-## 1) helm chart download
+## 2.1 helm chart download
 
 
 
@@ -172,7 +172,7 @@ drwxr-xr-x 2 song song  4096 Jul  3 16:24 templates/
 
 
 
-## 2) install - without pv
+## 2.2 install - without pv
 
 
 
@@ -416,7 +416,7 @@ redis-cli -c -h my-release-redis-cluster -a $REDIS_PASSWORD
 
 
 
-## 3) pod/svc 확인
+## 2.3 pod/svc 확인
 
 ```sh
 ## redis cluster 를 구성하고 있는 pod 를 조회
@@ -444,7 +444,7 @@ my-release-redis-cluster-headless   ClusterIP   None          <none>        6379
 
 
 
-## 4) Internal Access
+## 2.4 Internal Access
 
 redis client를 cluster 내부에서 실행후 접근하는 방법을 알아보자.
 
@@ -594,7 +594,7 @@ my-release-redis-cluster:6379> get b
 
 
 
-## 5) 결론
+## 2.5 결론
 
 - External (Cluster 외부) 에서 access 하기 위해서 node port 를 이용해야 함
 
@@ -612,7 +612,7 @@ my-release-redis-cluster:6379> get b
 
 
 
-## 6) Clean Up
+## 2.6 Clean Up
 
 ```sh
 
@@ -637,15 +637,11 @@ $ rm -rf ~/helm/charts/redis-cluster-7.6.4.tgz
 
 
 
-## 1) Redis(Single Master) Install
+## 3.1 Redis(Single Master) Install
 
 
 
-### (1)  Redis Install
-
-
-
-#### helm search
+### (1) helm search
 
 추가된 bitnami repo에서 redis-cluster 를 찾는다.
 
@@ -661,7 +657,7 @@ bitnami/redis chart 를 이용할것이다.
 
 
 
-#### helm install
+### (2) helm install
 
 ```sh
 
@@ -801,7 +797,7 @@ $ helm -n redis-system delete my-release
 
 
 
-### (2) pod / svc 확인
+## 3.2 pod / svc 확인
 
 ```sh
 $ krs get pod
@@ -828,7 +824,7 @@ my-release-redis-replicas   NodePort    10.103.228.149   <none>        6379:3221
 
 
 
-### (4) Clean Up
+## 3.3 Clean Up
 
 ```sh
 
@@ -850,17 +846,17 @@ $ kubectl delete namespace redis-system
 
 
 
-# 4. Accessing Kafka
+# 4. Accessing Redis
 
 
 
-## 1) Internal Access
+## 4.1 Internal Access
 
 redis client를 cluster 내부에서 실행후 접근하는 방법을 알아보자.
 
 
 
-### (1) Kafka Cluster Service 확인
+### (1) Redis Service 확인
 
 ```sh
 $ krs get svc
@@ -881,7 +877,7 @@ my-release-redis-replicas-2   1/1     Running   0          12m
 - my-release-redis-master 이 일반 kubernetes service 이며 POD 로 트래픽을 RR 방식으로 연결한다.
 - my-release-redis-headless 는 ip 가 없는 headless service 이다. 그러므로 pod 명을 붙여서 DNS 로 사용된다.
   - headless service 사용예시
-    - my-release-redis-master-0.my-release-redis-headless.kafka.svc
+    - my-release-redis-master-0.my-release-redis-headless.redis-system.svc
 
 - 우리는 Cluster 내에서  my-release-redis-master:6379로 접근을 시도할 것이다.
 
@@ -952,7 +948,7 @@ my-release-redis-master:6379> get d
 
 
 
-## 2) External Access
+## 4.2 External Access
 
 redis client를 cluster 외부에서 실행후 접근하는 방법을 알아보자.
 
@@ -960,7 +956,7 @@ redis client를 cluster 외부에서 실행후 접근하는 방법을 알아보�
 
 
 
-### (1) Kafka Cluster Service 확인
+### (1) Redis Service 확인
 
 ```sh
 $ krs get svc
@@ -1072,7 +1068,7 @@ OK
 
 
 
-# 4. P3X Redis UI
+# 5. P3X Redis UI
 
 참고링크
 https://www.electronjs.org/apps/p3x-redis-ui
@@ -1085,7 +1081,7 @@ P3X Web UI 를 kubernetes 에 설치해 보자.
 
 
 
-## 1) redis-ui deploy
+## 5.1 redis-ui deploy
 
 아래 yaml  manifest file을 활용하여 configmap, deployment, service, ingress 를 일괄 실행한다.
 
@@ -1190,7 +1186,7 @@ Node Port 32220 으로 접근이 가능하다.
 
 
 
-## 2) ui 확인
+## 5.2 UI 확인
 
 http://localhost:32220/
 
@@ -1200,7 +1196,7 @@ http://localhost:32220/
 
 
 
-## 3) Clean up
+## 5.3 Clean up
 
 ```sh
 $ cd ~/githubrepo/ktds-edu2
@@ -1213,7 +1209,7 @@ $ kubectl -n redis-system delete -f ./redis/redisui/12.p3xredisui-local.yaml
 
 
 
-# 5. ACL
+# 6. ACL
 
 Redis 6.0 이상부터는 계정별 access 수준을 정의할 수 있다.  
 
@@ -1227,7 +1223,7 @@ Redis 6.0 이상부터는 계정별 access 수준을 정의할 수 있다.
 
 
 
-## 1) Redis client 확인
+## 6.1 Redis Client 확인
 
 local pc 에서 access 테스트를 위해 docker redis client 를 설치하자.
 
@@ -1261,7 +1257,7 @@ $ redis-cli -h 192.168.31.1 -a new1234 -p 32200
 
 
 
-## 2) ACL 기본명령
+## 6.2 ACL 기본명령
 
 ```sh
 
@@ -1310,7 +1306,7 @@ OK
 
 
 
-## 2) 읽기전용 계정 생성
+## 6.3 읽기전용 계정 생성
 
 - 읽기전용 계정 테스트
 
@@ -1358,7 +1354,7 @@ OK
 
 
 
-## 3) 특정 key만 접근 허용
+## 6.4 특정 key만 접근 허용
 
 - song으로 로그인 하면 song으로 시작하는 key 만 get/set 가능하도록 설정
 
@@ -1417,7 +1413,182 @@ OK
 
 
 
-# 6. Redis Clean up
+
+
+# 7. Java Sample
+
+
+
+## 7.1 Jedis vs Lettuce
+
+참고: https://jojoldu.tistory.com/418
+
+Java 의 Redis Client 는 크게 Jedis 와 Lettuce  가 있음.
+
+- 초기에는 Jedis 를 많이 사용했으나 현재는 Lettuce 를 많이 사용하는 추세임.
+
+- Jedis 의 단점
+  -  멀티 쓰레드 불안정, Pool 한계 등
+- Lettuce 의 장점
+  - Netty 기반으로 비동기 지원 가능 등
+
+- 결국 Spring Boot 2.0 부터 Jedis 가 기본 클라이언트에서 deprecated 되고 Lettuce 가 탑재되었음
+
+
+
+
+
+## 7.2 redis-sample
+
+### (1) sample import
+
+- Github 의 redis-sample repo 주소 확인
+
+```
+https://github.com/ssongman/redis-sample.git
+```
+
+복사하여 클립보드에 기억한다.
+
+
+
+- STS 에서 import
+  - Package Explorer 에서 우클릭 이후 아래 메뉴 선택
+
+```
+1) import - git - Project from Git(with smart import)
+
+2) Select Repository Source
+   Clone 선택
+
+3) Source Git Repository
+   URI 에 위 주소 붙여넣기
+   클립보드에 기억된 git 주소로 자동 셋팅된다.
+
+4) Branch Selection
+   main 선택
+
+5) local Destination 에서 프로젝트 위치 지정
+
+6) Import Projects
+   Maven 확인 후 finish
+
+```
+
+
+
+
+
+### (2) 소스내 주소 수정
+
+src/main/resources/config/application.yaml 에서 아래 내용 수정
+
+- application.yaml
+
+```yaml
+server:
+  port: 8082
+  
+spring:
+  redis:
+    lettuce:
+      pool:
+        max-active: 8   # pool에 할당할수 있는 커넥션 최대수(default:8)
+        max-idle: 8     # pool의 idle 커넥션 최대수(default:8)
+        min-idle: 0     # pool의 idle 커넥션 최소수(default:0)
+    host: 192.168.31.1  # 
+    port: 32200
+    password: 'new1234'
+```
+
+
+
+- 참고 : 각 항목들에 대한 설명
+
+| 변수                         | 기본값                             | 설명                                                         |
+| ---------------------------- | ---------------------------------- | ------------------------------------------------------------ |
+| spring.redis.database        | 0                                  | 커넥션  팩토리에 사용되는 데이터베이스 인덱스                |
+| spring.redis.host            | localhost                          | 레디스  서버 호스트                                          |
+| spring.redis.password        | 레디스  서버 로그인 패스워드       |                                                              |
+| spring.redis.pool.max-active | 8                                  | pool에  할당될 수 있는 커넥션 최대수 (음수로 하면 무제한)    |
+| spring.redis.pool.max-idle   | 8                                  | pool의  "idle" 커넥션 최대수 (음수로 하면 무제한)            |
+| spring.redis.pool.max-wait   | -1                                 | pool이  바닥났을 때 예외발생 전에 커넥션 할당 차단의 최대 시간 (단위: 밀리세컨드, 음수는 무제한 차단) |
+| spring.redis.pool.min-idle   | 0                                  | 풀에서  관리하는 idle 커넥션의 최소 수 대상 (양수일 때만 유효) |
+| spring.redis.port            | 6379                               | 레디스  서버 포트                                            |
+| spring.redis.sentinel.master | 레디스  서버 이름                  |                                                              |
+| spring.redis.sentinel.nodes  | 호스트:포트  쌍 목록 (콤마로 구분) |                                                              |
+| spring.redis.timeout         | 0                                  | 커넥션  타임아웃 (단위: 밀리세컨드)                          |
+
+
+
+### (3) 실행
+
+```
+[Package Explorer] 
+- redis-sample 에서 우측버튼 클릭
+- Run As 
+- Spring Boot App 실행
+```
+
+
+
+## 7.3 CRUD 테스트
+
+p3x UI tool 로 모니터 하면서 아래 CRUD 테스트를진행해 보자.
+
+- p3x ui tool 링크: http://localhost:32220/main/statistics
+
+
+### (1) set
+
+
+```sh
+curl -X POST http://localhost:8082/person \
+  -H "Content-Type: application/json" \
+  -d '{  
+          "id": "aaaa",
+          "name": "Song",
+          "age": 20,
+          "createdAt": "2022-07-03T11:03:00"
+        }'
+
+curl -X POST http://localhost:8082/person \
+  -H "Content-Type: application/json" \
+  -d '{  
+          "id": "bbbb",
+          "name": "Park",
+          "age": 20,
+          "createdAt": "2022-07-03T11:03:00"
+        }'
+
+```
+
+### (2) get
+
+```sh
+curl localhost:8082/person/aaaa
+
+curl localhost:8082/person/bbbb
+
+```
+
+
+### (3) delete
+
+```sh
+curl -X DELETE localhost:8082/person/aaaa
+
+curl -X DELETE localhost:8082/person/bbbb
+
+```
+
+
+
+
+
+
+
+# 8. Redis Clean up
 
 WSL 에서의 Redis 실습이 완료되었다. 불필요한 리소스 사용을 없애기 위해서 깨끗히 삭제하도록 하자.
 
@@ -1425,10 +1596,9 @@ local PC 자원 절약을 위해서 사용하지 않을때는 반드시 Clean Up
 
 
 
-## 6.1 Strimzi All Clean Up
+## 8.1 Strimzi All Clean Up
 
 ```sh
-
 # 1) redis 삭제
 $ helm -n redis-system delete my-release
 
@@ -1463,7 +1633,7 @@ $ docker rm -f redis-client
 
 
 
-## 6.2 Docker Desktop 일시정지
+## 8.2 Docker Desktop 일시정지
 
 Kubernetes 를 포함한 docker Desktop 은 CPU 나 메모리를 많이 차지 한다. 그러므로 원할 한 실습을 위해서 잠깐 pause 해 놓자.
 
@@ -1472,200 +1642,6 @@ Kubernetes 를 포함한 docker Desktop 은 CPU 나 메모리를 많이 차지 �
 ![image-20220703012023558](redis-hands-in.assets/image-20220703012023558.png)
 
  
-
-
-
-
-
-
-
-
-
-# 7. Java Sample
-
-
-
-## 1) Jedis vs Lettuce
-
-참고: https://jojoldu.tistory.com/418
-
-Java 의 Redis Client 는 크게 Jedis 와 Lettuce  가 있음.
-
-- 초기에는 Jedis 를 많이 사용했으나 현재는 Lettuce 를 많이 사용하는 추세임.
-
-- Jedis 의 단점
-  -  멀티 쓰레드 불안정, Pool 한계 등
-- Lettuce 의 장점
-  - Netty 기반으로 비동기 지원 가능 등
-
-- 결국 Spring Boot 2.0 부터 Jedis 가 기본 클라이언트에서 deprecated 되고 Lettuce 가 탑재되었음
-
-
-
-
-
-## 2) Spring Boot Sample
-
-sample source github link
-
-
-
-- pom.xml
-
-```xml
-...
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-redis</artifactId>
-		</dependency>
-...
-```
-
-
-
-- application.yaml
-
-```yaml
-spring:
-  redis:
-    lettuce:
-      pool:
-        max-active: 10
-        max-idle: 10
-        min-idle: 2
-    host: localhost
-    port: 6379
-    password: 'new1234'
-```
-
-
-
-- 참고 : 각 항목들에 대한 설명
-
-| 변수                         | 기본값                             | 설명                                                         |
-| ---------------------------- | ---------------------------------- | ------------------------------------------------------------ |
-| spring.redis.database        | 0                                  | 커넥션  팩토리에 사용되는 데이터베이스 인덱스                |
-| spring.redis.host            | localhost                          | 레디스  서버 호스트                                          |
-| spring.redis.password        | 레디스  서버 로그인 패스워드       |                                                              |
-| spring.redis.pool.max-active | 8                                  | pool에  할당될 수 있는 커넥션 최대수 (음수로 하면 무제한)    |
-| spring.redis.pool.max-idle   | 8                                  | pool의  "idle" 커넥션 최대수 (음수로 하면 무제한)            |
-| spring.redis.pool.max-wait   | -1                                 | pool이  바닥났을 때 예외발생 전에 커넥션 할당 차단의 최대 시간 (단위: 밀리세컨드, 음수는 무제한 차단) |
-| spring.redis.pool.min-idle   | 0                                  | 풀에서  관리하는 idle 커넥션의 최소 수 대상 (양수일 때만 유효) |
-| spring.redis.port            | 6379                               | 레디스  서버 포트                                            |
-| spring.redis.sentinel.master | 레디스  서버 이름                  |                                                              |
-| spring.redis.sentinel.nodes  | 호스트:포트  쌍 목록 (콤마로 구분) |                                                              |
-| spring.redis.timeout         | 0                                  | 커넥션  타임아웃 (단위: 밀리세컨드)                          |
-
-
-
-Redis에 Connection을 하기 위한 RedisConnectionFactory 생성
-
-```java
-@Configuration
-public class RedisConfig {
-
-    @Value("${spring.redis.host}")
-    private String host;
-
-    @Value("${spring.redis.port}")
-    private int port;
-
-    @Bean
-    public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory(host, port);
-    }
-}
-
-```
-
-RedisConnectionFactory 인터페이스를 통해 LettuceConnectionFactory를 생성하여 반환한다.
-
-
-
-```java
-@Getter
-@RedisHash(value = "people", timeToLive = 3600)
-public class Person {
-
-    @Id
-    private String id;
-    private String name;
-    private Integer age;
-    private LocalDateTime createdAt;
-
-    public Person(String name, Integer age) {
-        this.name = name;
-        this.age = age;
-        this.createdAt = LocalDateTime.now();
-    }
-}
-```
-
-- Redis 에 저장할 자료구조인 객체를 정의함
-
-- 일반적인 객체 선언 후 @RedisHash 를 붙임
-  - value  값이 Redis 의 key prefix 로 사용됨
-  - timeToLive : 만료시간을 seconds 단위로 설정할 수 있음 
-    - 기본값은 만료시간이 없는 -1L 임.
-- @Id 어노테이션이 붙은 필드가 Redis Key 값이 되며 null 로 세팅하면 랜덤값이 설정됨
-  - keyspace 와 합쳐져서 레디스에 저장된 최종 키 값은 keyspace:id 가 됨
-    - key 생성형식: "people:{id}"
-
-
-
-
-
-## 4) redis-cli 확인
-
-
-
-
-
-### (1) Redis client 확인(Docker)
-
-local pc 에서 access 테스트를 위해 docker redis client 를 설치하자.
-
-※ wsl 에서도 docker 접근이 가능한 환경일 것이다. 그러므로 동일한 terminal 에서 수행하면 된다.
-
-```sh
-## redis-client 용도로 docker client 를 실행한다.
-$ docker run --name redis-client -d --rm --user root docker.io/bitnami/redis-cluster:6.2.7-debian-11-r3 sleep 365d
-
-## docker 내에 진입후
-$ docker exec -it redis-client bash
-
-## Local PC IP로 cluster mode 접근
-$ redis-cli -h 192.168.31.1 -c -a new1234 -p 32200
-
-```
-
-
-
-### (2) set/get 확인
-
-```sh
-# get 명령 수행
-# Internal Access 에서 테스트 했던 4개 값을 읽어오자.
-192.168.31.1:32200> get a
-"1"
-192.168.31.1:32200> get b
-"2"
-192.168.31.1:32200> get c
-"3"
-192.168.31.1:32200> get d
-"4"
-
-
-# set 명령 수행
-192.168.31.1:32200> set e 1
-OK
-192.168.31.1:32200> set f 2
-OK
-192.168.31.1:32200> set g 3
-OK
-
-```
 
 
 

@@ -164,35 +164,53 @@
 
 
 
-## 1) Redis 개요
+## 1) Redis Install 준비
 
 
 
-## 2) Redis Cluster Set
+## 2) Redis Cluster Install
+
+- helm chart download / Redis Cluster Install
+- Internal Access - Redis client 실행, Redis-cluster 상태 확인, set/get 확인
 
 
 
-## 3) Redis Set
+## 3) Redis Install
 
-- 주절주절
-
-
-
-## 4) P3X Redis UI
-
-- 주절주절
+- helm chart download / RedisInstall
 
 
 
-## 5) ACL
+## 4) Accessing Redis
 
-- 주절주절
+- Internal Access : Redis client, set/get 확인
+- External Access : Node IP 확인, Redis client 확인(Docker), set/get 확인
 
 
 
-## 6) Java Sample
+## 5) P3X Redis UI
 
-- 주절주절
+- redis-ui deploy
+
+
+
+## 6) ACL
+
+- ACL 기본명령
+- 읽기전용 계정 생성
+- 특정 key만 접근 허용 권한
+
+
+
+## 7) Java Sample
+
+- Jedis vs Lettuce
+- redis-sample 소스 확인 및 수행
+- CRUD 테스트
+
+
+
+## 8) Redis Clean up
 
 
 
