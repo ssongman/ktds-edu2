@@ -334,16 +334,6 @@ $ kubectl -n kafka logs -f strimzi-cluster-operator-7c77f74847-c9r6m
 
 
 
-## 2.5 clean up
-
-```sh
-$ cd  ~/song/strimzi/strimzi-0.29.0
-
-$ kubectl -n kafka delete -f ./install/cluster-operator
-```
-
-
-
 
 
 
@@ -352,161 +342,9 @@ $ kubectl -n kafka delete -f ./install/cluster-operator
 
 
 
-## 1) ephemeral sample
-
-### (1) kafka cluster 생성(no 인증)
-
-인증없는 기본생성 이므로 참고만 하자.
-
-```sh
-$ cd ~/githubrepo/ktds-edu2
-
-$ cat ./kafka/strimzi/kafka/11.kafka-ephemeral-no-auth.yaml
-apiVersion: kafka.strimzi.io/v1beta2
-kind: Kafka
-metadata:
-  name: my-cluster
-  namespace: kafka
-spec:
-  kafka:
-    version: 3.2.0
-    replicas: 3
-    listeners:
-      - name: plain
-        port: 9092
-        type: internal
-        tls: false
-      - name: tls
-        port: 9093
-        type: internal
-        tls: true
-    config:
-      offsets.topic.replication.factor: 3
-      transaction.state.log.replication.factor: 3
-      transaction.state.log.min.isr: 2
-      default.replication.factor: 3
-      min.insync.replicas: 2
-      inter.broker.protocol.version: "3.2"
-    storage:
-      type: ephemeral
-  zookeeper:
-    replicas: 3
-    storage:
-      type: ephemeral
-  entityOperator:
-    topicOperator: {}
-    userOperator: {} 
 
 
-$ kubectl -n kafka apply -f  ./strimzi/kafka/11.kafka-ephemeral-no-auth.yaml
-
-```
-
-
-
-
-
-### (2) kafka cluster 생성(인증)
-
-#### 생성
-
-```sh
-$ cd ~/githubrepo/ktds-edu2
-
-$ cat ./kafka/strimzi/kafka/12.kafka-ephemeral-auth.yaml
-apiVersion: kafka.strimzi.io/v1beta2
-kind: Kafka
-metadata:
-  name: my-cluster
-  namespace: kafka
-spec:
-  kafka:
-    version: 3.2.0
-    replicas: 3
-    authorization:
-      type: simple
-    listeners:
-      - name: plain
-        port: 9092
-        type: internal
-        tls: false
-        authentication:
-          type: scram-sha-512
-      - name: tls
-        port: 9093
-        type: internal
-        tls: true
-    config:
-      offsets.topic.replication.factor: 3
-      transaction.state.log.replication.factor: 3
-      transaction.state.log.min.isr: 2
-      default.replication.factor: 3
-      min.insync.replicas: 2
-      inter.broker.protocol.version: "3.2"
-    storage:
-      type: ephemeral
-  zookeeper:
-    replicas: 3
-    storage:
-      type: ephemeral
-  entityOperator:
-    topicOperator: {}
-    userOperator: {}
-
-# 생성
-$ kubectl -n kafka apply -f ./kafka/strimzi/kafka/12.kafka-ephemeral-auth.yaml
-
-```
-
-- 인증메커니즘
-
-  - SASL 은 인증 및 보안 서비스를 제공하는 프레임워크이다.
-  - 위 yaml 파일의 인증방식은 scram-sha-512  방식인데 이는 SASL 이 지원하는 메커니즘 중 하나이며 Broker 를 SASL 구성로 구성한다.
-
-
-
-#### 확인
-
-```sh
-$ kkf get pod
-NAME                                        READY   STATUS    RESTARTS       AGE
-kafkacat                                    1/1     Running   1 (7h7m ago)   7d18h
-my-cluster-kafka-0                          1/1     Running   0              35s
-my-cluster-kafka-1                          1/1     Running   0              35s
-my-cluster-kafka-2                          1/1     Running   0              35s
-my-cluster-zookeeper-0                      1/1     Running   0              59s
-my-cluster-zookeeper-1                      1/1     Running   0              59s
-my-cluster-zookeeper-2                      1/1     Running   0              59s
-strimzi-cluster-operator-7c77f74847-llxn5   1/1     Running   1 (7h7m ago)   8d
-
-$ kubectl -n kafka get kafka
-NAME         DESIRED KAFKA REPLICAS   DESIRED ZK REPLICAS   READY   WARNINGS
-my-cluster   3                        3                     True
-
-
-
-```
-
-
-
-#### clean up
-
-```sh
-$ kubectl -n kafka delete kafka my-cluster
-
-```
-
-
-
-
-
-# 3. Kafka Cluster 생성
-
-
-
-
-
-## 3.1 Kafka Cluster 생성
+## 1) Kafka Cluster 생성
 
 인증 작업
 
@@ -660,7 +498,7 @@ $ kubectl -n kafka apply -f  ./strimzi/kafka/11.kafka-ephemeral-no-auth.yaml
 
 
 
-## 3.2  KafkaUser
+## 2)  KafkaUser
 
 - kafka cluster 생성시 scram-sha-512 type 의 authentication 를 추가했다면 반드시 KafkaUser 가 존재해야 한다.
 
@@ -779,7 +617,7 @@ KykkJNJTcTJB
 
 
 
-## 3.3 KafkaTopic
+## 3) KafkaTopic
 
 
 
@@ -897,11 +735,11 @@ status:
 
 
 
-# 4. Accessing Kafka
+# 3. Accessing Kafka
 
 
 
-## 4.2 Internal Access
+## 1) Internal Access
 
 
 
@@ -1159,7 +997,7 @@ while true; do kafkacat -b $BROKERS \
 
 
 
-## 4.3 External Access(Node Port)
+## 2) External Access(Node Port)
 
 참고: https://strimzi.io/blog/2019/04/17/accessing-kafka-part-1/
 
@@ -1409,7 +1247,7 @@ kafkacat -b $BROKERS \
 
 
 
-# 5. Monitoring
+# 4. Monitoring
 
 모니터링이 필요할 경우 exporter 를 설치후 promtheus와 연동할 수 있다. 
 
@@ -3379,8 +3217,6 @@ sample source github link
 
 
 
-
-
 - pom.xml
 
 ```xml
@@ -3482,28 +3318,6 @@ public class Person {
 - @Id 어노테이션이 붙은 필드가 Redis Key 값이 되며 null 로 세팅하면 랜덤값이 설정됨
   - keyspace 와 합쳐져서 레디스에 저장된 최종 키 값은 keyspace:id 가 됨
     - key 생성형식: "people:{id}"
-
-
-
-
-
-
-
-
-# 9. python test - 작성중
-
-
-- pod로 실행
-
-```
-oc -n redis-system run pythonfortest --image=ktis-bastion01.container.ipc.kt.com:5000/admin/python:3.7 -- sleep 365d
-```
-
-- deploy로 실행
-
-```
-oc -n redis-system create deploy pythonfortest --image=ktis-bastion01.container.ipc.kt.com:5000/admin/python:3.7 -- sleep 365d
-```
 
 
 

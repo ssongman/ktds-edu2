@@ -72,52 +72,95 @@
 
 
 
-## 1) Kafka 개요
+## 1) Strimzi
 
-- 주절주절
-
-
+- Strimzi /  Strimzi Operator 란?
 
 
-## 2) Strimzi
 
-- 주절주절
+
+## 2) Strimzi Operator install
+
+- Strmzi download 및 install 방법 
 
 
 
 ## 3) Kafka Cluster 생성
 
-- 주절주절
+- Kafka Cluster 생성
+- Kafka User 생성
+- Kafka Topic 생성
 
 
 
-## 4) User / Topic 생성
+## 4) Accessing Kafka
 
-- 주절주절
-
-
-
-## 4) Internal / External Access
-
-- 주절주절
+- Broker 접근 방식의 이해
+- Internal / External Access 이해 
+- Internal Access Test
+- Node Port 구성 / External Access Test
 
 
 
-## 6) Monitoring
+## 5) Python Test
+
+- Python Client (Kubernetes / Docker 이용) 설치
+- Internal Access  / External Access
 
 
 
-## 7) python 실습
+## 6) Strimzi Clean up
 
 
 
-## 8) Java 실습
+## 7) Java - Spring Cloud Stream
+
+- 개인별로 할당된 Topic 확인
+- 개인별 Spring Cloud Stream 특정
+- kafka-consumer 실습
+- kafka-producer 실습
+
+
+
+## 8) Rebalancing Round
+
+- Stop The World 내용 확인
+- Rebalancing 시나리오
+- 시나리오 테스트 수행 
 
 
 
 
 
-# 3. Class2: Redis on Kubernetes ( [가이드 문서 보기](./redis/redis.md) )  
+# 4. Redis 개념 ( [가이드 문서 보기](./redis/redis-개념.md) )  
+
+## 1) Redis 개요
+
+- Redis 개요
+- Redis / Redis Cluster
+
+
+
+## 2) Caching
+
+- Caching 정의
+- hit 관련 용어
+- Cache 사용시 주의사항
+
+
+
+## 3) Cache Pattern
+
+- Pattern 1 : 코드성 데이터 캐싱
+
+- Pattern 2 : 주기 생성 데이터 캐싱
+- Pattern  3 : E2E 구간 성능 향상
+
+
+
+
+
+# 5. Redis Hands-in ( [가이드 문서 보기](./redis/redis-hands-in.md) )  
 
 
 
@@ -161,16 +204,27 @@
 
 - k3s Cluster 용도 VM 생성
 - k3s 설치
-- user 생성
 
-## 2) Istio 셋팅
 
-- helm 설치
-- Istio 설치
-- Monitoring 설치
-  - Prometheus / Grafana / Kiali / Jeager 설치
 
-## 3) ArgoCD 셋팅
+## 2) Strimzi on KTCloud
 
-- ArgoCD 설치
-- ArgoCD CLI 설치
+- Strimzi Cluster Operator Install
+
+- Kafka Cluster 생성
+
+- KafkaUser / KafkaTopic 생성
+
+- Accessing Kafka / Internal Access / External Access(Node Port)
+
+- Monitoring 환경구축 (Kafka Exporter / Prometheus / Grafana )
+
+  
+
+## 3) Redis on KT Cloud
+
+- helm install
+- Redis Cluster / Redis Install
+- P3X Redis UI
+- ACL
+- Java Sample
