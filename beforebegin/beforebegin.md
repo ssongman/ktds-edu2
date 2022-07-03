@@ -309,7 +309,7 @@ CMD / PowerShell / putty 와 같은 기본 터미널을 이용해도 되지만 �
 
 
 
-# 2. 교육문서
+# 2. 교육문서 Download
 
 해당 교육문서는 모두 markdown 형식으로 작성되었다.  Chrome Browser 에서 github 문서를 직접 확인해도 된다.
 
