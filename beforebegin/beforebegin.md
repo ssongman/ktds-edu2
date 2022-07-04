@@ -299,15 +299,13 @@ CMD / PowerShell / putty 와 같은 기본 터미널을 이용해도 되지만 �
 
 
 
-### (2) java 설치
-
-- 링크: https://javadl.oracle.com/webapps/download/AutoDL?BundleId=246442_2dee051a5d0647d5be72a7c0abff270e
-
-
-
-### (3) Lombok 설치
+### (2) Lombok 설치
 
 - 링크: https://lovelyunsh.tistory.com/126
+  - java 가 설치되어 있지 않으면 Lombok 설치 안됨
+  - java 설치시 아래 링크 참고
+    - 링크: https://javadl.oracle.com/webapps/download/AutoDL?BundleId=246442_2dee051a5d0647d5be72a7c0abff270e
+
 
 
 
@@ -323,9 +321,11 @@ CMD / PowerShell / putty 와 같은 기본 터미널을 이용해도 되지만 �
 
 
 
-## 2.1 gitbash 설치
+## 2.1 gitBash 설치
 
-- 링크 : https://1d1cblog.tistory.com/12
+교육문서를 다운로드 받으려면 Git Command 가 필요하다. Windows 에서는 기본 제공되지 않아 별도 설치 해야 한다.
+
+- gitBash 링크 : https://1d1cblog.tistory.com/12
 
 
 
