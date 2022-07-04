@@ -299,11 +299,15 @@ CMD / PowerShell / putty 와 같은 기본 터미널을 이용해도 되지만 �
 
 
 
-### (2) Lombok 설치
+### (2) java 설치
+
+- 링크: https://javadl.oracle.com/webapps/download/AutoDL?BundleId=246442_2dee051a5d0647d5be72a7c0abff270e
+
+
+
+### (3) Lombok 설치
 
 - 링크: https://lovelyunsh.tistory.com/126
-
-
 
 
 
@@ -319,18 +323,27 @@ CMD / PowerShell / putty 와 같은 기본 터미널을 이용해도 되지만 �
 
 
 
-## 2.1 교육문서 Download
+## 2.1 gitbash 설치
 
-command 명령어로 아래와 같이 임의의 디렉토리를 생성후 git clone 으로 download 하자.
+- 링크 : https://1d1cblog.tistory.com/12
+
+
+
+
+
+## 2.2 교육문서 Download
+
+gitbash 실행후 command 명령어로 아래와 같이 임의의 디렉토리를 생성후 git clone 으로 download 하자.
 
 ```sh
 
 # 본인 PC에서 임의의 디렉토리를 생성
-D:\>mkdir githubrepo
+$ mkdir -p /d/githubrepo
+ 
+ 
+$ cd githubrepo
 
-D:\>cd githubrepo
-
-D:\githubrepo> git clone https://github.com/ssongman/ktds-edu2.git
+$ git clone https://github.com/ssongman/ktds-edu2.git
 Cloning into 'ktds-edu2'...
 remote: Enumerating objects: 424, done.
 remote: Counting objects: 100% (424/424), done.
@@ -340,21 +353,18 @@ Receiving objects: 100% (424/424), 12.94 MiB | 5.67 MiB/s, done.
 Resolving deltas: 100% (123/123), done.
 
 
-D:\githubrepo\ktds-edu2>dir
-2022-07-02  오후 03:17    <DIR>          .
-2022-06-27  오후 11:56    <DIR>          ..
-2022-07-02  오후 03:51    <DIR>          beforebegin
-2022-07-02  오후 03:10    <DIR>          kafka
-2022-07-01  오전 01:37    <DIR>          ktcloud-setup
-2022-07-02  오후 03:17             2,930 README.md
-2022-07-01  오전 01:58    <DIR>          redis
-
+$ ll
+drwxr-xr-x 1 ssong 197609    0 7월   3 23:37 beforebegin/
+drwxr-xr-x 1 ssong 197609    0 7월   3 23:49 kafka/
+drwxr-xr-x 1 ssong 197609    0 7월   3 16:53 ktcloud-setup/
+-rw-r--r-- 1 ssong 197609 4396 7월   3 23:26 README.md
+drwxr-xr-x 1 ssong 197609    0 7월   3 23:46 redis/
 
 ```
 
 
 
-## 2.2 typora 로 readme.md 파일오픈
+## 2.3 typora 로 readme.md 파일오픈
 
 
 
